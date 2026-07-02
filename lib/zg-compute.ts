@@ -31,7 +31,10 @@ async function getBroker() {
 // --transferFund--> provider sub-account. We top the sub-account to a small
 // buffer above the minimum so request fees don't dip it back under.
 const MIN_BALANCE_OG = Number(process.env.COMPUTE_MIN_BALANCE_OG || 1.0);
-const TARGET_BALANCE_OG = Number(process.env.COMPUTE_TARGET_BALANCE_OG || 1.1);
+// Fund to exactly the network minimum by default to consume the least 0G.
+const TARGET_BALANCE_OG = Number(process.env.COMPUTE_TARGET_BALANCE_OG || 1.0);
+// Cap the response length to reduce 0G Compute token spend per request.
+const MAX_TOKENS = Number(process.env.COMPUTE_MAX_TOKENS || 512);
 
 const ogToNeuron = (og: number) => BigInt(Math.round(og * 1e18)); // 1 0G = 1e18 neuron
 const neuronToOg = (n: bigint) => Number(n) / 1e18;
@@ -74,15 +77,21 @@ async function ensureProviderFunded(broker: any, provider: string) {
   const subShortfall = TARGET - subBalance; // > 0 here
 
   try {
-    // Create the main ledger (with an initial deposit) if it doesn't exist.
-    if (!ledgerExists) {
-      await broker.ledger.addLedger(TARGET_BALANCE_OG);
-      available = TARGET;
-    }
-    // Top up the main account if it can't cover the transfer yet.
-    if (available < subShortfall) {
-      const depositOg = neuronToOg(subShortfall - available) + 0.01; // small buffer
-      await broker.ledger.depositFund(depositOg);
+    // Ensure the main account can cover the transfer. If we couldn't read the
+    // ledger detail, assume nothing is available and fund the full shortfall.
+    if (!ledgerExists || available < subShortfall) {
+      const depositOg =
+        neuronToOg(subShortfall - (ledgerExists ? available : 0n)) + 0.005;
+      // Create the ledger on first use; if it already exists, top it up instead.
+      try {
+        await broker.ledger.addLedger(depositOg);
+      } catch (e) {
+        if (/already exist/i.test((e as Error).message || "")) {
+          await broker.ledger.depositFund(depositOg);
+        } else {
+          throw e;
+        }
+      }
     }
     // Lock the shortfall into the provider sub-account.
     await broker.ledger.transferFund(provider, "inference", subShortfall);
@@ -156,7 +165,7 @@ export async function danfoChat(
   const res = await fetch(`${endpoint}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...headers },
-    body: JSON.stringify({ model, messages }),
+    body: JSON.stringify({ model, messages, max_tokens: MAX_TOKENS }),
   });
 
   if (!res.ok) {
