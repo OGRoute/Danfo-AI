@@ -1,10 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Agent, fetch as undiciFetch, FormData as UndiciFormData } from "undici";
 import { transcribe } from "../../../lib/zg-speech";
 import { isIntronConfigured, transcribeWithIntron } from "../../../lib/intron-speech";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
+
+// Local Whisper STT service (defaults to the same box as YarnGPT). When set, it
+// is the primary engine — Whisper auto-detects language incl. Nigerian ones.
+const STT_BASE = (
+  process.env.STT_API_URL ||
+  process.env.YARNGPT_API_URL ||
+  ""
+).replace(/\/$/, "");
+const STT_TIMEOUT_MS = Number(process.env.STT_TIMEOUT_MS || 300_000);
+const sttAgent = new Agent({
+  headersTimeout: STT_TIMEOUT_MS,
+  bodyTimeout: STT_TIMEOUT_MS,
+});
+
+// Set STT_PREFER_INTRON=1 to make Intron the primary STT engine (best accuracy
+// for Nigerian languages) once your Intron account is provisioned. Whisper then
+// acts as the fallback. Default: local Whisper first.
+const PREFER_INTRON = process.env.STT_PREFER_INTRON === "1";
+
+async function transcribeLocal(
+  buf: Buffer,
+  filename: string,
+  language?: string
+): Promise<string> {
+  // Use undici's own FormData so it serializes as proper multipart for fetch.
+  const fd = new UndiciFormData();
+  fd.append("file", new Blob([new Uint8Array(buf)]), filename);
+  if (language) fd.append("language", language);
+  const res = await undiciFetch(`${STT_BASE}/stt`, {
+    method: "POST",
+    body: fd,
+    dispatcher: sttAgent,
+  });
+  if (!res.ok) {
+    throw new Error(`local STT ${res.status}: ${await res.text().catch(() => "")}`);
+  }
+  const data: any = await res.json();
+  return (data?.text || "").trim();
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,62 +55,50 @@ export async function POST(req: NextRequest) {
     const buf = Buffer.from(await file.arrayBuffer());
     const filename = file.name || "audio.webm";
 
-    // Intron (African-accent ASR incl. Pidgin) is the primary voice engine.
-    if (isIntronConfigured()) {
+    // Build the engine order. Intron first only when explicitly preferred.
+    const local = {
+      name: "whisper-local",
+      enabled: !!STT_BASE,
+      run: () => transcribeLocal(buf, filename, language),
+    };
+    const intron = {
+      name: "intron",
+      enabled: isIntronConfigured(),
+      run: () => transcribeWithIntron(buf, filename, language),
+    };
+    const zerog = {
+      name: "0g-whisper",
+      enabled: true,
+      run: () => transcribe(buf, filename, language),
+    };
+    const engines = (
+      PREFER_INTRON ? [intron, local, zerog] : [local, intron, zerog]
+    ).filter((e) => e.enabled);
+
+    const errors: string[] = [];
+    for (const eng of engines) {
       try {
-        const text = await transcribeWithIntron(buf, filename, language);
-        return NextResponse.json({ text, engine: "intron" });
-      } catch (intronErr) {
-        const msg = (intronErr as Error).message || "";
-        // Intron gates its API behind an approved "integrator account".
-        if (/\b403\b|integrator|permission denied/i.test(msg)) {
-          console.error("/api/transcribe Intron permission error:", msg);
-          return NextResponse.json(
-            {
-              error:
-                "Voice input is set up, but your Intron account isn't approved for API access yet " +
-                "(their API needs an 'integrator account'). Email voice@intron.io to request access. " +
-                "You can keep typing in the meantime.",
-            },
-            { status: 403 }
-          );
-        }
-        // Intron authorized the request but its backend didn't process the audio
-        // ("file not queued" / 5xx). Usually a transient service issue or an
-        // account not yet provisioned to run STT jobs.
-        if (/file not queued|\b5\d\d\b/i.test(msg)) {
-          console.error("/api/transcribe Intron processing error:", msg);
-          return NextResponse.json(
-            {
-              error:
-                "Intron received the audio but couldn't process it right now (its service may be " +
-                "temporarily down, or your account isn't fully provisioned for transcription). " +
-                "Try again shortly, or contact voice@intron.io. You can keep typing meanwhile.",
-            },
-            { status: 503 }
-          );
-        }
-        throw intronErr;
+        const text = await eng.run();
+        return NextResponse.json({ text, engine: eng.name });
+      } catch (e) {
+        const msg = (e as Error).message || "";
+        console.error(`/api/transcribe ${eng.name} failed:`, msg);
+        errors.push(msg);
       }
     }
 
-    // No Intron key: try the 0G Whisper fallback. The public 0G network may not
-    // have a speech provider online, so surface an actionable message if not.
-    try {
-      const text = await transcribe(buf, filename, language);
-      return NextResponse.json({ text, engine: "0g-whisper" });
-    } catch (fallbackErr) {
-      console.error("/api/transcribe 0G fallback failed:", fallbackErr);
-      return NextResponse.json(
-        {
-          error:
-            "Voice input isn't available: no 0G speech-to-text provider is online. " +
-            "Add INTRON_API_KEY (from https://voice.intron.io) to enable Yorùbá / Igbo / " +
-            "Hausa / Pidgin / English voice input — or type your message instead.",
-        },
-        { status: 503 }
-      );
+    // Every engine failed — return the most actionable guidance we can.
+    const joined = errors.join(" | ");
+    let hint =
+      "Voice input isn't available right now. Make sure the local speech service " +
+      "is running (yarngpt-service on port 8000), or configure another STT engine. " +
+      "You can type your message meanwhile.";
+    if (!STT_BASE && /integrator|permission denied|\b403\b/i.test(joined)) {
+      hint =
+        "Intron account isn't approved for API access yet (needs an 'integrator " +
+        "account'). Email voice@intron.io, or start the local Whisper service.";
     }
+    return NextResponse.json({ error: hint }, { status: 503 });
   } catch (e) {
     console.error("/api/transcribe error:", e);
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });

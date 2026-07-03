@@ -1,0 +1,165 @@
+===============================================================================
+ DanfoAI — Changelog
+ Branch: upgrade-r16
+ Date:   2026-07-03
+===============================================================================
+
+Conversational Nigerian transit agent for Lagos danfo/BRT routes, on 0G.
+This changelog covers the features and fixes added on top of the base app.
+
+
+-------------------------------------------------------------------------------
+ ADDED — Features
+-------------------------------------------------------------------------------
+
+Authentication & sessions (Clerk)
+  - Hosted sign-in via Clerk (Google, email magic link, etc.), JWT sessions,
+    no database required. Clerk is optional — if its keys are absent the app
+    still runs on wallet + anonymous.
+  - Wallet sign-in (Web3 / MetaMask) via ethers BrowserProvider.
+  - "Continue without an account" (anonymous) path — no sign-in required.
+  - Unified auth context: Clerk -> wallet -> anonymous priority.
+  - Middleware is guarded so the app runs with or without Clerk configured.
+
+Chat history
+  - Per-account conversation history (persisted for signed-in identities,
+    ephemeral for anonymous). Slide-in history drawer: new chat, select,
+    delete, plus account / sign-out footer.
+
+Notifications
+  - Header bell with unread badge and dropdown panel; fires on verified
+    replies / errors; persisted per identity.
+
+Dark / light mode
+  - CSS design tokens for both themes, no-flash theme script, system-preference
+    default, header toggle. Theme-aware throughout.
+
+Responsive UI
+  - Tablet / phone / narrow breakpoints across the whole app.
+
+Accessible transit background
+  - Decorative animated danfo bus, car and okada on a subtle road; aria-hidden,
+    low-contrast, respects prefers-reduced-motion.
+
+Animated multilingual greeting + logo (merged from benji branch)
+  - FlipWords greeting cycling E kaabo / Nnoo / Barka / Welcome (framer-motion),
+    rendered theme-safe. DanfoAI bus logo in the header with a themeable
+    wordmark (black on the light header, yellow on the dark header).
+
+Route map (Leaflet + OpenStreetMap)
+  - Full-screen map plotting Lagos stops; highlights and draws the route
+    detected from the current conversation. No API key; code-split so it loads
+    only when opened.
+
+Voice-to-text (speech-to-text)
+  - Primary: the browser Web Speech API (instant, on-device, zero server load).
+  - Fallbacks: local Whisper service, then Intron, then 0G Whisper.
+  - Language picker (Yoruba / Igbo / Hausa / English / Pidgin) drives the
+    recognizer language.
+
+Text-to-voice (text-to-speech)
+  - Primary: the browser speechSynthesis (instant, zero server load).
+  - Fallback: YarnGPT service (Nigerian-accented voice; slower on CPU).
+  - "Listen" button on each assistant reply.
+
+Local speech service (yarngpt-service)
+  - FastAPI service bundling:
+      * YarnGPT2 text-to-speech (English, Yoruba, Igbo, Hausa, Pidgin).
+      * Whisper speech-to-text via faster-whisper (auto-detects language).
+  - Endpoints: /health, /tts, /stt.
+  - Config via yarngpt-service/.env (model sizes, preload, timeouts, etc.).
+
+
+-------------------------------------------------------------------------------
+ CHANGED
+-------------------------------------------------------------------------------
+
+  - Voice-in and voice-out default to the browser speech engines for speed
+    (instant, no CPU/RAM load); the neural services are automatic fallbacks.
+  - Whisper STT tuned for low-RAM hardware: lazy model load (no startup OOM),
+    "tiny" model default, faster-whisper (int8), beam search, VAD, a Lagos
+    transit domain prompt, all CPU cores.
+  - YarnGPT TTS: startup preload option, in-memory clip cache, capped spoken
+    text length, soundfile WAV encoding, all CPU cores.
+  - Themeable DanfoAI wordmark; enlarged, responsive header logo.
+  - Chat responses capped (max_tokens) to reduce 0G Compute token spend.
+
+
+-------------------------------------------------------------------------------
+ FIXED
+-------------------------------------------------------------------------------
+
+  - Connect-wallet button: connects on eth_requestAccounts alone (one popup)
+    instead of an extra, unverifiable signature step; clearer no-wallet message.
+  - 0G Compute ledger funding: funds the per-provider sub-account to the network
+    minimum (deposit -> transferFund), idempotently; falls back to depositFund
+    when the ledger already exists ("Account already exists"); clear error when
+    the wallet lacks testnet 0G.
+  - 0G RPC timeouts: shared, tuned provider (static network + explicit timeout)
+    across all 0G libs.
+  - TTS "Couldn't play audio." shown after normal playback: detach media
+    handlers before clearing the source.
+  - /api/speak fetch: undici dispatcher with a long timeout for slow CPU
+    inference; used undici's own FormData/fetch to avoid a version clash.
+  - /api/transcribe: correct multipart to the local STT service; engine
+    ordering with an STT_PREFER_INTRON toggle.
+  - Dark-mode logo legibility.
+  - Speech service stability on low-RAM hardware (lazy load avoids OOM kills).
+
+
+-------------------------------------------------------------------------------
+ SECURITY
+-------------------------------------------------------------------------------
+
+  - Removed a real private key that had been committed to .env.example; keys now
+    live only in gitignored .env.local. (Rotate that testnet key.)
+
+
+-------------------------------------------------------------------------------
+ DEPENDENCIES
+-------------------------------------------------------------------------------
+
+  Node (app):
+    + @clerk/nextjs, leaflet, react-leaflet, framer-motion, tailwind-merge,
+      undici
+    - next-auth (replaced by Clerk)
+
+  Python (yarngpt-service):
+    + fastapi, uvicorn, pydantic, torch, torchaudio, transformers, outetts,
+      uroman, soundfile, python-multipart, faster-whisper, ffmpeg (conda),
+      openai-whisper, and the cloned yarngpt package (vendored under
+      yarngpt-service/yarngpt/).
+
+
+-------------------------------------------------------------------------------
+ KNOWN LIMITATIONS
+-------------------------------------------------------------------------------
+
+  - Hardware: on a low-power CPU-only laptop (e.g. i5-6200U / 8 GB, no GPU),
+    neural TTS/STT are slow and can exhaust RAM. Browser speech engines are used
+    by default to keep voice fast and stable; the neural services are optional.
+  - Nigerian-language STT accuracy: browser recognition and Whisper are weak for
+    Yoruba/Igbo/Hausa. Best accuracy needs Intron (pending account approval) or
+    a cloud STT (e.g. Google), or a bigger machine to run Meta MMS / larger
+    Whisper.
+  - Intron STT: the current account returns 403 (needs integrator approval,
+    voice@intron.io); wired as a fallback and behind STT_PREFER_INTRON.
+  - 0G testnet: the public RPC is slow, and no speech provider is online.
+
+
+-------------------------------------------------------------------------------
+ SETUP NOTES
+-------------------------------------------------------------------------------
+
+  App:
+    - Copy .env.example to .env.local and fill in values (never commit .env.local).
+    - npm install; npm run dev.
+
+  Speech service (optional — only needed as a fallback / for the Nigerian voice):
+    - See yarngpt-service/README.md. Requires a Python 3.11 env with the deps
+      above, ffmpeg, the cloned yarngpt package, and the WavTokenizer + Whisper
+      model files (downloaded on first use / per the README).
+    - Run: uvicorn main:app --host 0.0.0.0 --port 8000
+    - Point the app at it with YARNGPT_API_URL (defaults to http://localhost:8000).
+
+===============================================================================
