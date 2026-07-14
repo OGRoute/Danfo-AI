@@ -25,3 +25,6 @@ yarngpt-service/models/
 # misc
 .DS_Store
 *.log
+
+# rust / soroban build artifacts
+target/
