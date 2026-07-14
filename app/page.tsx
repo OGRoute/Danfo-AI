@@ -8,6 +8,7 @@ import AuthGate from "../components/AuthGate";
 import NotificationBell from "../components/NotificationBell";
 import HistoryDrawer from "../components/HistoryDrawer";
 import MapPanel from "../components/MapPanel";
+import StellarPanel from "../components/StellarPanel";
 import { findStopsInText } from "../lib/lagos-stops";
 import { useVoiceRecorder } from "../lib/useVoiceRecorder";
 import { useTextToSpeech } from "../lib/useTextToSpeech";
@@ -52,6 +53,7 @@ export default function Home() {
   const [lang, setLang] = useState<string>("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const [stellarOpen, setStellarOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Stops mentioned in the latest exchange, to highlight on the map.
@@ -169,6 +171,8 @@ export default function Home() {
         route={detectedRoute}
       />
 
+      <StellarPanel open={stellarOpen} onClose={() => setStellarOpen(false)} />
+
       <main className="wrap">
         <header className="top">
           <button
@@ -205,6 +209,16 @@ export default function Home() {
           >
             <span aria-hidden>🗺️</span>
             {detectedRoute.length > 1 && <span className="mapdot" aria-hidden />}
+          </button>
+
+          <button
+            type="button"
+            className="mapbtn"
+            onClick={() => setStellarOpen(true)}
+            aria-label="Community routes on Stellar"
+            title="Community routes on Stellar"
+          >
+            <span aria-hidden>⭐</span>
           </button>
 
           <NotificationBell
