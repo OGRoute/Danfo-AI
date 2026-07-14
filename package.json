@@ -34,6 +34,8 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "dotenv": "^16.4.5",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.5",
     "solc": "^0.8.26",
     "tsx": "^4.16.0",
     "typescript": "^5"

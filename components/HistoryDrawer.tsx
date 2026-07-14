@@ -53,8 +53,8 @@ export default function HistoryDrawer({
 
         {!canPersist && (
           <p className="note">
-            You're anonymous — history isn't saved. Connect a wallet to keep your
-            chats.
+            You&apos;re anonymous — history isn&apos;t saved. Connect a wallet to
+            keep your chats.
           </p>
         )}
 

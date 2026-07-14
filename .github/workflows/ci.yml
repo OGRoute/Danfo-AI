@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App (types + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build must succeed without secrets — features degrade gracefully.
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  contract:
+    name: Soroban contract (test + wasm)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stellar/route-corrections
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            stellar/route-corrections/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('stellar/route-corrections/Cargo.lock') }}
+
+      - name: Unit tests
+        run: cargo test
+
+      - name: Build wasm
+        run: cargo build --target wasm32-unknown-unknown --release
+
+      - name: Check wasm artifact exists
+        run: test -f target/wasm32-unknown-unknown/release/route_corrections.wasm
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

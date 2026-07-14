@@ -28,3 +28,8 @@ yarngpt-service/models/
 
 # rust / soroban build artifacts
 target/
+
+# Vendored third-party YarnGPT source (no license upstream — do NOT redistribute).
+# Fetch locally with: ./yarngpt-service/fetch-yarngpt.sh
+yarngpt-service/yarngpt/
+__pycache__/
