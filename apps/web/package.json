@@ -1,0 +1,43 @@
+{
+  "name": "danfo-web",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Danfo web app — multilingual AI transit agent for Lagos, backed by community-verified route data on Stellar",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed": "tsx scripts/seed-routes.ts",
+    "deploy:contract": "tsx scripts/deploy-contract.ts",
+    "fund": "tsx scripts/fund.ts"
+  },
+  "dependencies": {
+    "@0glabs/0g-serving-broker": "^0.6.5",
+    "@0glabs/0g-ts-sdk": "^0.3.3",
+    "@clerk/nextjs": "^6.12.0",
+    "@stellar/freighter-api": "^6.0.1",
+    "@stellar/stellar-sdk": "^16.0.1",
+    "ethers": "^6.13.0",
+    "framer-motion": "^12.42.2",
+    "leaflet": "^1.9.4",
+    "next": "14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
+    "tailwind-merge": "^3.6.0",
+    "undici": "^8.5.0"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.5",
+    "solc": "^0.8.26",
+    "tsx": "^4.16.0",
+    "typescript": "^5"
+  }
+}
