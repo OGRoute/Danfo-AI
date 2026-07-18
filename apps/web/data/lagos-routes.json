@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-22",
+  "currency": "NGN",
+  "note": "Seed knowledge base for DanfoAI. Fares are approximate and change often; community corrections on Stellar keep this current.",
+  "stops": [
+    "CMS", "Obalende", "TBS", "Marina", "Oshodi", "Yaba", "Ojuelegba",
+    "Mile 2", "Festac", "Ikeja", "Berger", "Ojota", "Maryland", "Ketu",
+    "Mile 12", "Ikorodu", "Ajah", "Lekki Phase 1", "Victoria Island",
+    "Surulere", "Costain", "Iyana Ipaja", "Agege", "Abule Egba"
+  ],
+  "routes": [
+    {
+      "from": "CMS", "to": "Oshodi", "mode": "danfo", "fare": [400, 600],
+      "via": ["Costain", "Surulere", "Ojuelegba"],
+      "notes": "Frequent danfo from CMS park. Heavy traffic 7-9am and 4-7pm."
+    },
+    {
+      "from": "Oshodi", "to": "Ikeja", "mode": "brt", "fare": [300, 400],
+      "via": ["Bolade"],
+      "notes": "BRT lane available; smoother than danfo in rush hour."
+    },
+    {
+      "from": "CMS", "to": "Ikeja", "mode": "mixed", "fare": [700, 1000],
+      "via": ["Oshodi"],
+      "notes": "Take danfo/BRT CMS->Oshodi, then BRT Oshodi->Ikeja. Change at Oshodi terminal."
+    },
+    {
+      "from": "Obalende", "to": "Lekki Phase 1", "mode": "danfo", "fare": [400, 700],
+      "via": ["Victoria Island"],
+      "notes": "Danfo from Obalende under-bridge park. Ask for Lekki first gate."
+    },
+    {
+      "from": "Yaba", "to": "Oshodi", "mode": "danfo", "fare": [300, 500],
+      "via": ["Ojuelegba"],
+      "notes": "Board at Yaba bus stop heading toward Ojuelegba then Oshodi."
+    },
+    {
+      "from": "Mile 2", "to": "CMS", "mode": "danfo", "fare": [400, 600],
+      "via": ["Costain"],
+      "notes": "Apapa-Oshodi expressway can be slow due to trucks."
+    },
+    {
+      "from": "Ikorodu", "to": "TBS", "mode": "brt", "fare": [500, 700],
+      "via": ["Mile 12", "Ketu", "Ojota"],
+      "notes": "Ikorodu BRT corridor is the fastest option into Lagos Island."
+    },
+    {
+      "from": "Berger", "to": "Oshodi", "mode": "danfo", "fare": [300, 500],
+      "via": ["Ojota", "Maryland"],
+      "notes": "Along the Lagos-Ibadan expressway service lane."
+    },
+    {
+      "from": "Ajah", "to": "CMS", "mode": "danfo", "fare": [700, 1200],
+      "via": ["Lekki Phase 1", "Victoria Island", "Obalende"],
+      "notes": "Long route along Lekki-Epe expressway; tolls and traffic add time."
+    }
+  ],
+  "phrases": {
+    "yo": { "greeting": "Bawo ni", "thanks": "E se" },
+    "ig": { "greeting": "Kedu", "thanks": "Daalu" },
+    "ha": { "greeting": "Sannu", "thanks": "Na gode" }
+  }
+}
