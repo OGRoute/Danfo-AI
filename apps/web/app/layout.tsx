@@ -5,7 +5,7 @@ import Providers from "../components/Providers";
 export const metadata: Metadata = {
   title: "DanfoAI — Lagos transit, in your language",
   description:
-    "Conversational Nigerian transit agent for danfo and BRT routes, powered by 0G decentralized AI.",
+    "Conversational Nigerian transit agent for danfo and BRT routes, grounded in community-verified route data on Stellar.",
 };
 
 export const viewport: Viewport = {

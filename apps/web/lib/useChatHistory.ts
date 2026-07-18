@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export interface Msg {
   role: "user" | "assistant";
   content: string;
-  verified?: boolean;
 }
 
 export interface Conversation {
@@ -31,7 +30,7 @@ function titleFrom(messages: Msg[]): string {
  *  - Logged-in wallet  → persisted in localStorage (survives reloads).
  *  - Anonymous (null)  → kept in memory only for the current session.
  *
- * Structured behind this hook so the store can later move to 0G Storage or a
+ * Structured behind this hook so the store can later move to a remote store or
  * database without touching the UI.
  */
 export function useChatHistory(identityKey: string | null) {

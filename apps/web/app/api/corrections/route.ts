@@ -1,33 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as stellar from "../../../lib/stellar-corrections";
 import { isStellarConfigured } from "../../../lib/stellar";
-import {
-  submitCorrection as zgSubmit,
-  getRecentCorrections as zgRecent,
-} from "../../../lib/zg-chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 /**
- * Community route corrections.
- *
- * Backed by the RouteCorrections Soroban contract on Stellar when
- * STELLAR_CORRECTIONS_CONTRACT is set; otherwise falls back to the original
- * 0G Chain contract. (0G Compute still powers the chat AI either way.)
+ * Community route corrections, backed by the Danfo registry contract on
+ * Stellar. Reads are chain simulations; server-signed writes are a fallback
+ * for users without a wallet (the primary path is Freighter, client-signed).
  */
 export async function GET() {
   try {
-    if (isStellarConfigured()) {
-      const [corrections, total] = await Promise.all([
-        stellar.recent(10),
-        stellar.total(),
-      ]);
-      return NextResponse.json({ corrections, total, chain: "stellar" });
+    if (!isStellarConfigured()) {
+      return NextResponse.json({
+        corrections: [],
+        total: 0,
+        error: "Stellar contract not configured",
+      });
     }
-    const corrections = await zgRecent(10);
-    return NextResponse.json({ corrections, chain: "0g" });
+    const [corrections, total] = await Promise.all([
+      stellar.recent(10),
+      stellar.total(),
+    ]);
+    return NextResponse.json({ corrections, total, chain: "stellar" });
   } catch (e) {
     return NextResponse.json(
       { error: (e as Error).message, corrections: [] },
@@ -38,6 +35,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!isStellarConfigured()) {
+      return NextResponse.json(
+        { error: "Stellar contract not configured" },
+        { status: 503 }
+      );
+    }
     const { fromStop, toStop, detail, storageHash } = await req.json();
     if (!fromStop || !toStop || !detail) {
       return NextResponse.json(
@@ -45,32 +48,26 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    if (isStellarConfigured()) {
-      const txHash = await stellar.submitCorrection(
-        fromStop,
-        toStop,
-        detail,
-        storageHash || ""
-      );
-      return NextResponse.json({ txHash, chain: "stellar" });
-    }
-
-    const txHash = await zgSubmit(fromStop, toStop, detail, storageHash || "");
-    return NextResponse.json({ txHash, chain: "0g" });
+    const txHash = await stellar.submitCorrection(
+      fromStop,
+      toStop,
+      detail,
+      storageHash || ""
+    );
+    return NextResponse.json({ txHash, chain: "stellar" });
   } catch (e) {
     console.error("/api/corrections error:", e);
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }
 
-/** Upvote a correction (Stellar only). */
+/** Upvote a correction. */
 export async function PATCH(req: NextRequest) {
   try {
     if (!isStellarConfigured()) {
       return NextResponse.json(
-        { error: "Upvoting requires the Stellar contract" },
-        { status: 400 }
+        { error: "Stellar contract not configured" },
+        { status: 503 }
       );
     }
     const { id } = await req.json();

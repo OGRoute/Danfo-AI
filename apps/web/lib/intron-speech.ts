@@ -6,7 +6,7 @@
  * unlike Whisper, Nigerian Pidgin (pcm).
  *
  * Enabled by setting INTRON_API_KEY. When it's unset, callers fall back to the
- * 0G Whisper transcriber so the app keeps working without Intron credentials.
+ * local Whisper service so the app keeps working without Intron credentials.
  */
 
 const INTRON_ENDPOINT =

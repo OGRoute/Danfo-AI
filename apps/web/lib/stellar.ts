@@ -1,9 +1,9 @@
 /**
  * Stellar / Soroban configuration for DanfoAI.
  *
- * The community RouteCorrections registry runs as a Soroban smart contract on
- * Stellar (testnet by default). 0G Compute still powers the chat AI — Stellar
- * handles the on-chain corrections ledger and payments.
+ * The community corrections registry runs as a Soroban smart contract on
+ * Stellar (testnet by default). Stellar owns the corrections ledger, stakes,
+ * rewards, and payments; AI inference is off-chain and pluggable.
  *
  * Env is read lazily (not at module load) so it works regardless of when the
  * environment is populated.

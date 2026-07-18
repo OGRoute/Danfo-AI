@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Agent, fetch as undiciFetch, FormData as UndiciFormData } from "undici";
-import { transcribe } from "../../../lib/zg-speech";
 import { isIntronConfigured, transcribeWithIntron } from "../../../lib/intron-speech";
 
 export const runtime = "nodejs";
@@ -66,14 +65,9 @@ export async function POST(req: NextRequest) {
       enabled: isIntronConfigured(),
       run: () => transcribeWithIntron(buf, filename, language),
     };
-    const zerog = {
-      name: "0g-whisper",
-      enabled: true,
-      run: () => transcribe(buf, filename, language),
-    };
-    const engines = (
-      PREFER_INTRON ? [intron, local, zerog] : [local, intron, zerog]
-    ).filter((e) => e.enabled);
+    const engines = (PREFER_INTRON ? [intron, local] : [local, intron]).filter(
+      (e) => e.enabled
+    );
 
     const errors: string[] = [];
     for (const eng of engines) {

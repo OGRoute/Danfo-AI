@@ -1,7 +1,7 @@
 /**
  * Builds the DanfoAI system prompt from the route knowledge base.
- * The KB is injected so the model grounds answers in real route data
- * (loaded from 0G Storage at runtime).
+ * The KB is injected so the model grounds answers in real route data,
+ * kept current by community corrections recorded on Stellar.
  */
 export interface RouteKB {
   version: number;
@@ -52,6 +52,6 @@ Known stops: ${kb.stops.join(", ")}
 Known routes:
 ${routeLines}
 
-This knowledge base is community-owned and lives on 0G. Riders submit
-corrections that are recorded on-chain, so it keeps improving.`;
+This knowledge base is community-owned. Riders stake and submit corrections
+on Stellar; accepted corrections earn rewards, so the data keeps improving.`;
 }

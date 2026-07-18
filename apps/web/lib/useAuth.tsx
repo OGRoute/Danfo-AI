@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { BrowserProvider } from "ethers";
+import { requestAccess } from "@stellar/freighter-api";
 import { useUser, useClerk } from "@clerk/nextjs";
 
 type Status = "loading" | "unauthenticated" | "anonymous" | "connected";
@@ -47,13 +47,10 @@ function shorten(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-function getEthereum(): any {
-  return typeof window !== "undefined" ? (window as any).ethereum : undefined;
-}
-
 /**
- * Shared wallet + anonymous session logic used by both provider variants.
- * (Kept separate from Clerk so it works with or without Clerk configured.)
+ * Shared wallet (Freighter / Stellar) + anonymous session logic used by both
+ * provider variants. (Kept separate from Clerk so it works with or without
+ * Clerk configured.)
  */
 function useLocalIdentity() {
   const [local, setLocal] = useState<LocalSession | null>(null);
@@ -94,29 +91,14 @@ function useLocalIdentity() {
 
   const connectWallet = useCallback(async () => {
     setError(null);
-    const eth = getEthereum();
-    if (!eth) {
-      setError(
-        "No crypto wallet detected. Install MetaMask (metamask.io) and refresh, " +
-          "or use another sign-in option."
-      );
-      return;
-    }
     setConnecting(true);
     try {
-      // Request accounts. Try EIP-1193 directly first (most reliable trigger of
-      // the wallet popup), falling back to ethers' provider.send.
-      let accounts: string[] = [];
-      if (typeof eth.request === "function") {
-        accounts = await eth.request({ method: "eth_requestAccounts" });
-      } else {
-        const provider = new BrowserProvider(eth);
-        accounts = await provider.send("eth_requestAccounts", []);
-      }
-
-      const addr = accounts?.[0];
+      // Freighter (Stellar browser wallet). One popup: authorize this site.
+      const res = await requestAccess();
+      if ((res as any)?.error) throw new Error(String((res as any).error));
+      const addr = res?.address;
       if (!addr) {
-        setError("No wallet account was authorized.");
+        setError("No Stellar account was authorized.");
         return;
       }
 
@@ -128,9 +110,10 @@ function useLocalIdentity() {
       persist(s);
     } catch (e: any) {
       setError(
-        e?.code === 4001 || /reject|denied/i.test(e?.message || "")
+        /reject|denied/i.test(e?.message || "")
           ? "Wallet connection was rejected."
-          : e?.message || "Couldn't connect wallet."
+          : e?.message ||
+              "Couldn't connect Freighter. Install it from freighter.app and refresh."
       );
     } finally {
       setConnecting(false);
@@ -142,28 +125,6 @@ function useLocalIdentity() {
     setLocal(null);
     persist(null);
     setError(null);
-  }, [persist]);
-
-  // React to wallet account switches / disconnects.
-  useEffect(() => {
-    const eth = getEthereum();
-    if (!eth?.on) return;
-    const onAccountsChanged = (accounts: string[]) => {
-      setLocal((prev) => {
-        if (prev?.mode !== "wallet") return prev;
-        if (!accounts?.length) {
-          setAddress(null);
-          persist(null);
-          return null;
-        }
-        setAddress(accounts[0]);
-        const s: LocalSession = { mode: "wallet", address: accounts[0] };
-        persist(s);
-        return s;
-      });
-    };
-    eth.on("accountsChanged", onAccountsChanged);
-    return () => eth.removeListener?.("accountsChanged", onAccountsChanged);
   }, [persist]);
 
   return {

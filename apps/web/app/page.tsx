@@ -28,7 +28,7 @@ const SAMPLES = [
 
 /**
  * Languages offered for voice input. `code` is the ASR hint sent to the
- * transcription API (Intron / 0G Whisper). Pidgin (pcm) is supported by Intron.
+ * transcription API (local Whisper / Intron). Pidgin (pcm) is supported by Intron.
  */
 const LANGUAGES: { code: string; label: string }[] = [
   { code: "", label: "Auto-detect" },
@@ -97,16 +97,13 @@ export default function Home() {
       setKbSource(data.kbSource || "");
       const final: Msg[] = [
         ...next,
-        { role: "assistant", content: data.reply, verified: data.verified },
+        { role: "assistant", content: data.reply },
       ];
       setMessages(final);
       history.saveMessages(final);
-      notif.notify(
-        data.verified ? "Reply verified on 0G Compute" : "Reply received",
-        data.verified ? "success" : "info"
-      );
+      notif.notify("Route found", "success");
     } catch (e: any) {
-      const errText = e.message || "couldn't reach 0G Compute.";
+      const errText = e.message || "couldn't reach the AI service.";
       setMessages((m) => [
         ...m,
         { role: "assistant", content: "Wahala dey o — " + errText },
@@ -192,8 +189,8 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="chainbadge" title="Powered by 0G decentralized AI">
-            on&nbsp;0G
+          <div className="chainbadge" title="Community route data on Stellar">
+            on&nbsp;Stellar
           </div>
 
           <button
@@ -252,9 +249,7 @@ export default function Home() {
               <div className="content">{m.content}</div>
               {m.role === "assistant" && (
                 <div className="meta">
-                  <span className={`verify ${m.verified ? "ok" : "warn"}`}>
-                    {m.verified ? "✓ verified on 0G Compute" : "unverified response"}
-                  </span>
+                  <span className="verify ok">community-verified route data</span>
                   <button
                     type="button"
                     className={`speak ${tts.playingId === i ? "playing" : ""}`}
@@ -351,7 +346,7 @@ export default function Home() {
 
         {kbSource && (
           <div className="provenance">
-            route data: {kbSource} · corrections recorded on 0G Chain
+            route data: {kbSource} · corrections recorded on Stellar
           </div>
         )}
       </main>
