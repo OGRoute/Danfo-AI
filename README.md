@@ -1,129 +1,88 @@
-# DanfoAI 🚌 — Conversational Nigerian Transit Agent on 0G
+# Danfo 🚌 — Community-Owned Transit Knowledge for Lagos, on Stellar
 
-**Ask for any Lagos route, in your own language. Powered by 0G decentralized AI.**
+**Ask for any Lagos route in Yoruba, Igbo, Hausa, Pidgin, or English — answered
+from route data the community maintains and earns for maintaining.**
 
-DanfoAI is a voice-and-text agent that helps Lagos residents navigate *danfo*
-(yellow minibuses) and BRT routes using natural language in **Yoruba, Igbo,
-Hausa, Nigerian Pidgin, and English**. No maps, no menus — just talk.
+[![CI](https://github.com/OGRoute/Danfo-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/OGRoute/Danfo-AI/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Stellar](https://img.shields.io/badge/Soroban-testnet-brightgreen)](https://developers.stellar.org/docs/build/smart-contracts)
 
-> _"Mo fẹ lọ si Oshodi lati CMS"_ → DanfoAI replies in Yoruba with the best
-> danfo route, where to change, and a fare estimate.
+Lagos runs on informal *danfo* minibuses — no official map, no reliable fare
+data. Danfo fixes the data problem with real economic weight:
 
-Built for the **0G Zero Cup**.
+1. **Stake** — a rider or driver submits a route/fare correction, staking a
+   small amount via the [danfo-registry](https://github.com/OGRoute/danfo-contracts) Soroban contract.
+2. **Attest** — peers approve or reject it during a 24-hour challenge window.
+3. **Settle** — accepted corrections refund the stake; spam is slashed into
+   the reward pool.
+4. **Earn** — accepted corrections claim a reward from the sponsor-funded
+   pool. With NGNC (Stellar's naira stablecoin) and SEP-24, rewards can become
+   naira in a Nigerian bank account.
 
----
+The AI agent is the demand side: a voice-and-text assistant that answers
+routing questions **grounded in this community-verified knowledge base** — in
+five languages, with Nigerian-accented speech.
 
-## Why this needs 0G (all three layers do real work)
-
-DanfoAI breaks without any one of 0G's layers — it is not a bolt-on:
-
-| Layer | What it does in DanfoAI | Why it matters |
-|-------|------------------------|----------------|
-| **0G Compute** | Runs the multilingual LLM inference on decentralized GPUs. Every reply is verified via `processResponse()` (TEE-backed). | Answers are **verifiable & censorship-resistant** — a centralized API can't prove its output wasn't altered. |
-| **0G Storage** | Holds the route knowledge base, content-addressed by Merkle root hash. The AI grounds every answer in this data. | Riders can prove the AI reasoned over the **community's actual route data**, not a hidden dataset. |
-| **0G Chain** | Records community route corrections in the `RouteCorrections` contract. | The knowledge base is **community-owned and auditable** — a living transit map of Lagos. |
-
-The result: a transit knowledge base owned by the riders who use it, that gets
-more accurate every time someone corrects a fare or a route.
-
----
+> _"Mo fẹ lọ si Oshodi lati CMS"_ → the best danfo route, where to change, and
+> a fare estimate, in Yoruba.
 
 ## How it works
 
 ```
-User: "Mo fẹ lọ si Oshodi lati CMS"
-        │
-        ▼
-  Next.js app
-        │
-        ├─► 0G Storage  ──►  load route KB (Merkle-verified)
-        │
-        ├─► 0G Compute  ──►  LLM inference + processResponse() verification
-        │                     (detects language, returns route + fare)
-        │
-        └─► 0G Chain    ──►  community corrections registry (read/write)
-        ▼
-Reply in Yoruba: route, change point, fare estimate ✓ verified on 0G
+User ──► apps/web (Next.js)
+           │  chat: KB-grounded inference (any OpenAI-compatible endpoint)
+           │  corrections feed: reads via indexer, falls back to chain
+           │  writes: Freighter signs → Soroban RPC (never through the indexer)
+           │
+           ├──► indexer/ (Node + SQLite)  — syncs chain state, REST feed,
+           │        finalize/claim crank
+           │
+           └──► Soroban contracts (danfo-contracts repo)
+                    danfo-registry: submit (staked) → attest → finalize
+                    danfo-rewards:  sponsor pool → claim per accepted correction
 ```
 
----
+This monorepo holds the application layer; the contracts live in
+[danfo-contracts](https://github.com/OGRoute/danfo-contracts).
+
+| Workspace | What it is |
+|---|---|
+| `apps/web` | Next.js app — multilingual chat, voice, route map, corrections feed, Freighter wallet, fare payments |
+| `packages/sdk` | `@danfo/sdk` — typed clients for both contracts (reads, XDR builders, submit helpers) |
+| `indexer/` | Chain-state poller, finalize/claim crank, REST API (SQLite) |
+| `services/speech` | Optional FastAPI service: YarnGPT2 TTS + Whisper STT for Nigerian languages |
 
 ## Quick start
 
-### Prerequisites
-- Node 18+
-- A funded **0G Galileo testnet** wallet:
-  1. Create a fresh EVM wallet (e.g. MetaMask) — use a throwaway, never a real-funds wallet.
-  2. Get test tokens from the faucet: https://faucet.0g.ai
-  3. Network: RPC `https://evmrpc-testnet.0g.ai`, Chain ID `16602`.
+Prereqs: Node 18+ (Node 20 recommended), a funded Stellar **testnet** account
+([friendbot](https://friendbot.stellar.org)), and the deployed contract ids
+from `danfo-contracts/scripts/deploy.sh`.
 
-### Install
 ```bash
 npm install
-cp .env.local.example .env.local   # then add your PRIVATE_KEY
+cp apps/web/.env.example apps/web/.env.local   # fill in contract ids + inference endpoint
+npm run dev                                     # web app on :3000
+
+# optional but recommended — feed + crank:
+REGISTRY_CONTRACT=C... REWARDS_CONTRACT=C... INDEXER_SECRET_KEY=S... npm run dev:indexer
 ```
 
-### Seed the route data onto 0G Storage
-```bash
-npm run seed
-# prints a root hash → paste it into .env.local as ROUTES_ROOT_HASH
-```
+Open http://localhost:3000, tap the ⭐ button for the corrections feed, the mic
+to talk.
 
-### Deploy the corrections contract to 0G Chain
-```bash
-npm run deploy:contract
-# prints a contract address → paste it into .env.local as CORRECTIONS_CONTRACT
-```
+## Status
 
-### Run
-```bash
-npm run dev
-# open http://localhost:3000
-```
+Testnet software, unaudited contracts. See [SECURITY.md](SECURITY.md).
 
-Type or tap the mic and ask for a route in any supported language.
+## Contributing
 
----
+Issues are labeled by area (`web`, `sdk`, `indexer`, `speech`) and complexity.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). Conventional commits, one
+logical change per PR, CI must be green.
 
-## Project structure
+## License
 
-```
-danfo-ai/
-├── app/
-│   ├── page.tsx                 # chat UI (text + voice + verification badge)
-│   ├── layout.tsx
-│   └── api/
-│       ├── chat/route.ts        # 0G Compute inference + verification
-│       └── corrections/route.ts # 0G Chain read/write
-├── lib/
-│   ├── zg-compute.ts            # broker, inference, processResponse()
-│   ├── zg-storage.ts            # upload/download route KB (Merkle)
-│   ├── zg-chain.ts              # RouteCorrections contract (ethers v6)
-│   ├── prompt.ts                # multilingual system prompt builder
-│   └── routes-kb.ts             # KB loader (0G Storage → seed fallback)
-├── contracts/
-│   └── RouteCorrections.sol     # community corrections registry
-├── scripts/
-│   ├── seed-routes.ts           # upload KB to 0G Storage
-│   └── deploy-contract.ts       # compile + deploy to 0G Chain (cancun)
-└── data/
-    └── lagos-routes.json        # seed knowledge base
-```
+[MIT](LICENSE)
 
----
-
-## Roadmap (post-group-stage)
-
-- Voice replies via 0G Compute speech models (full hands-free for drivers).
-- Upvote-weighted corrections so the most-trusted community data wins.
-- Live crowding/traffic signals contributed by riders.
-- Expand beyond Lagos to Abuja, Kano, Ibadan.
-
----
-
-## Built with
-
-[0G Compute](https://docs.0g.ai) · [0G Storage](https://docs.0g.ai) ·
-[0G Chain](https://docs.0g.ai) · Next.js · ethers v6
-
-_Route data and fares are community-maintained and approximate. Corrections welcome — that's the whole point._
+_Route data and fares are community-maintained and approximate. Corrections
+welcome — that's the whole point._
