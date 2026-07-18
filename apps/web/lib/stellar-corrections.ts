@@ -1,36 +1,32 @@
 /**
- * Client for the RouteCorrections Soroban contract on Stellar.
+ * Server-side client for the Danfo registry + rewards contracts.
  *
- * Reads (total / recent) run as read-only simulations. Writes (submit / upvote)
- * are signed server-side by the app's Stellar key (STELLAR_SECRET) and sent to
- * the network — the Freighter path (user-signed) is handled client-side.
+ * Reads run as chain simulations (or come from the indexer, see the API
+ * route). Writes have two paths:
+ *   - Freighter (primary): prepare an XDR here, the browser signs it, and
+ *     /api/stellar/pay submits it.
+ *   - App key (fallback, wallet-less users): sign with STELLAR_SECRET here.
  */
+import { Keypair } from "@stellar/stellar-sdk";
+import { createHash } from "crypto";
 import {
-  Contract,
-  TransactionBuilder,
-  BASE_FEE,
-  Address,
-  Keypair,
-  nativeToScVal,
-  scValToNative,
-  rpc,
-  xdr,
-} from "@stellar/stellar-sdk";
+  Correction,
+  CorrectionKind,
+  DanfoConfig,
+  RegistryClient,
+  RewardsClient,
+  makeServer,
+  signAndSend,
+} from "@danfo/sdk";
 import {
-  getRpcServer,
   getNetworkPassphrase,
-  getCorrectionsContractId,
+  getRegistryContractId,
+  getRewardsContractId,
+  getRpcUrl,
 } from "./stellar";
 
-export interface Correction {
-  contributor: string;
-  fromStop: string;
-  toStop: string;
-  detail: string;
-  storageHash: string;
-  timestamp: number;
-  upvotes: number;
-}
+export type { Correction };
+export { CorrectionKind };
 
 function appKeypair(): Keypair {
   const secret = process.env.STELLAR_SECRET;
@@ -45,126 +41,103 @@ function readSourceKey(): string {
   return appKeypair().publicKey();
 }
 
-function contract(): Contract {
-  const id = getCorrectionsContractId();
-  if (!id) throw new Error("STELLAR_CORRECTIONS_CONTRACT is not set");
-  return new Contract(id);
-}
-
-/** Simulate a read-only contract call and return the decoded native value. */
-async function read(method: string, args: xdr.ScVal[] = []): Promise<any> {
-  const server = getRpcServer();
-  const source = await server.getAccount(readSourceKey());
-  const tx = new TransactionBuilder(source, {
-    fee: BASE_FEE,
-    networkPassphrase: getNetworkPassphrase(),
-  })
-    .addOperation(contract().call(method, ...args))
-    .setTimeout(30)
-    .build();
-
-  const sim = await server.simulateTransaction(tx);
-  if (rpc.Api.isSimulationError(sim)) {
-    throw new Error(`simulation failed: ${sim.error}`);
-  }
-  return scValToNative(sim.result!.retval);
-}
-
-function mapCorrection(c: any): Correction {
+function danfoCfg(): DanfoConfig {
+  const registryId = getRegistryContractId();
+  if (!registryId) throw new Error("registry contract is not configured");
   return {
-    contributor: String(c.contributor),
-    fromStop: c.from_stop,
-    toStop: c.to_stop,
-    detail: c.detail,
-    storageHash: c.storage_hash,
-    timestamp: Number(c.timestamp),
-    upvotes: Number(c.upvotes),
+    rpcUrl: getRpcUrl(),
+    networkPassphrase: getNetworkPassphrase(),
+    registryId,
+    rewardsId: getRewardsContractId() || undefined,
+    readSource: readSourceKey(),
   };
 }
 
-export async function total(): Promise<number> {
-  return Number(await read("total"));
+function registry(): RegistryClient {
+  return new RegistryClient(danfoCfg());
 }
 
-export async function recent(n = 10): Promise<Correction[]> {
-  const raw = await read("recent", [nativeToScVal(n, { type: "u32" })]);
-  return (raw as any[]).map(mapCorrection);
+function rewards(): RewardsClient | null {
+  const cfg = danfoCfg();
+  return cfg.rewardsId ? new RewardsClient(cfg) : null;
 }
 
-/** Submit a correction, signed by the app key. Returns the tx hash. */
+/** sha256 over the canonical off-chain payload for a correction. */
+export function payloadHash(
+  routeId: string,
+  kind: CorrectionKind,
+  summary: string
+): Uint8Array {
+  return new Uint8Array(
+    createHash("sha256")
+      .update(JSON.stringify({ routeId, kind, summary }))
+      .digest()
+  );
+}
+
+// ---- reads ------------------------------------------------------------------
+
+export function total(): Promise<number> {
+  return registry().total();
+}
+
+export function recent(n = 10): Promise<Correction[]> {
+  return registry().recent(n);
+}
+
+export function reputation(who: string) {
+  return registry().reputation(who);
+}
+
+export async function poolStats(): Promise<{ pool: string; totalPaid: string }> {
+  const r = rewards();
+  if (!r) return { pool: "0", totalPaid: "0" };
+  const [pool, totalPaid] = await Promise.all([r.pool(), r.totalPaid()]);
+  return { pool: pool.toString(), totalPaid: totalPaid.toString() };
+}
+
+// ---- Freighter path: prepare XDRs for the browser to sign -------------------
+
+export function prepareSubmit(
+  contributor: string,
+  routeId: string,
+  kind: CorrectionKind,
+  summary: string
+): Promise<string> {
+  return registry().buildSubmitXdr({
+    contributor,
+    routeId,
+    kind,
+    payloadHash: payloadHash(routeId, kind, summary),
+    summary,
+  });
+}
+
+export function prepareAttest(
+  voter: string,
+  id: number,
+  approve: boolean
+): Promise<string> {
+  return registry().buildAttestXdr({ voter, id, approve });
+}
+
+// ---- app-key fallback path --------------------------------------------------
+
 export async function submitCorrection(
-  fromStop: string,
-  toStop: string,
-  detail: string,
-  storageHash = ""
+  routeId: string,
+  kind: CorrectionKind,
+  summary: string
 ): Promise<string> {
-  const server = getRpcServer();
   const kp = appKeypair();
-  const source = await server.getAccount(kp.publicKey());
-
-  const tx = new TransactionBuilder(source, {
-    fee: BASE_FEE,
-    networkPassphrase: getNetworkPassphrase(),
-  })
-    .addOperation(
-      contract().call(
-        "submit",
-        new Address(kp.publicKey()).toScVal(),
-        nativeToScVal(fromStop, { type: "string" }),
-        nativeToScVal(toStop, { type: "string" }),
-        nativeToScVal(detail, { type: "string" }),
-        nativeToScVal(storageHash, { type: "string" })
-      )
-    )
-    .setTimeout(60)
-    .build();
-
-  const prepared = await server.prepareTransaction(tx);
-  prepared.sign(kp);
-  return sendAndConfirm(server, prepared);
+  const xdr = await prepareSubmit(kp.publicKey(), routeId, kind, summary);
+  return signAndSend(makeServer(getRpcUrl()), getNetworkPassphrase(), xdr, kp);
 }
 
-/** Upvote a correction, signed by the app key. */
-export async function upvoteCorrection(id: number): Promise<string> {
-  const server = getRpcServer();
-  const kp = appKeypair();
-  const source = await server.getAccount(kp.publicKey());
-
-  const tx = new TransactionBuilder(source, {
-    fee: BASE_FEE,
-    networkPassphrase: getNetworkPassphrase(),
-  })
-    .addOperation(
-      contract().call(
-        "upvote",
-        new Address(kp.publicKey()).toScVal(),
-        nativeToScVal(id, { type: "u32" })
-      )
-    )
-    .setTimeout(60)
-    .build();
-
-  const prepared = await server.prepareTransaction(tx);
-  prepared.sign(kp);
-  return sendAndConfirm(server, prepared);
-}
-
-async function sendAndConfirm(
-  server: rpc.Server,
-  tx: Awaited<ReturnType<rpc.Server["prepareTransaction"]>>
+export async function attestCorrection(
+  id: number,
+  approve: boolean
 ): Promise<string> {
-  const sent = await server.sendTransaction(tx);
-  if (sent.status === "ERROR") {
-    throw new Error(`send failed: ${JSON.stringify(sent.errorResult)}`);
-  }
-  // Poll until the transaction is included.
-  for (let i = 0; i < 30; i++) {
-    const got = await server.getTransaction(sent.hash);
-    if (got.status === "SUCCESS") return sent.hash;
-    if (got.status === "FAILED") {
-      throw new Error(`transaction failed: ${sent.hash}`);
-    }
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  throw new Error(`transaction not confirmed in time: ${sent.hash}`);
+  const kp = appKeypair();
+  const xdr = await prepareAttest(kp.publicKey(), id, approve);
+  return signAndSend(makeServer(getRpcUrl()), getNetworkPassphrase(), xdr, kp);
 }

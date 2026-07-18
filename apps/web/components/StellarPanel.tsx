@@ -4,13 +4,22 @@ import { useCallback, useEffect, useState } from "react";
 import { useFreighter } from "../lib/useFreighter";
 
 interface Correction {
+  id: number;
   contributor: string;
-  fromStop: string;
-  toStop: string;
-  detail: string;
-  storageHash: string;
-  timestamp: number;
-  upvotes: number;
+  routeId: string;
+  kind: number; // 0 Fare, 1 Route, 2 Closure
+  summary: string;
+  status: number; // 0 Pending, 1 Accepted, 2 Rejected
+  approvals: number;
+  rejections: number;
+  submittedAt: number;
+}
+
+interface Stats {
+  pool?: string;
+  totalPaid?: string;
+  accepted?: number;
+  pending?: number;
 }
 
 interface Props {
@@ -18,19 +27,33 @@ interface Props {
   onClose: () => void;
 }
 
+const KIND_LABELS = ["Fare", "Route", "Closure"];
+const STATUS_LABELS = ["Pending", "Accepted", "Rejected"];
+
 function shortKey(k: string): string {
   return k ? `${k.slice(0, 4)}…${k.slice(-4)}` : "";
 }
 
+function slugify(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+function stroopsToXlm(v?: string): string {
+  if (!v) return "0";
+  return (Number(v) / 10_000_000).toFixed(1);
+}
+
 /**
- * Stellar panel: the community route-corrections registry (a Soroban contract
- * on Stellar), plus the Freighter wallet and fare payments.
+ * Stellar panel: the staked community corrections registry (submit → attest →
+ * finalize, rewards for accepted corrections), plus the Freighter wallet and
+ * fare payments.
  */
 export default function StellarPanel({ open, onClose }: Props) {
   const wallet = useFreighter();
 
   const [corrections, setCorrections] = useState<Correction[]>([]);
   const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState<Stats>({});
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -39,7 +62,8 @@ export default function StellarPanel({ open, onClose }: Props) {
 
   const [fromStop, setFromStop] = useState("");
   const [toStop, setToStop] = useState("");
-  const [detail, setDetail] = useState("");
+  const [kind, setKind] = useState(0);
+  const [summary, setSummary] = useState("");
   const [fare, setFare] = useState("2");
 
   const load = useCallback(async () => {
@@ -51,6 +75,7 @@ export default function StellarPanel({ open, onClose }: Props) {
       if (data.error) throw new Error(data.error);
       setCorrections(data.corrections || []);
       setTotal(data.total ?? (data.corrections?.length || 0));
+      setStats(data.stats || {});
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -75,22 +100,32 @@ export default function StellarPanel({ open, onClose }: Props) {
   }, [wallet.address]);
 
   async function submit() {
-    if (!fromStop.trim() || !toStop.trim() || !detail.trim()) return;
+    if (!fromStop.trim() || !toStop.trim() || !summary.trim()) return;
     setBusy("submit");
     setErr(null);
     setMsg(null);
+    const routeId = `${slugify(fromStop)}-${slugify(toStop)}`;
     try {
+      const body: Record<string, unknown> = { routeId, kind, summary };
+      if (wallet.address) body.contributor = wallet.address;
+
       const res = await fetch("/api/corrections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fromStop, toStop, detail }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || "Submit failed");
-      setMsg(`Recorded on Stellar · tx ${shortKey(data.txHash)}`);
+
+      let hash: string = data.txHash;
+      if (data.xdr) {
+        // Freighter path: stake comes from the connected wallet.
+        hash = await wallet.signAndSubmit(data.xdr);
+      }
+      setMsg(`Correction staked on Stellar · tx ${shortKey(hash)}`);
       setFromStop("");
       setToStop("");
-      setDetail("");
+      setSummary("");
       await load();
     } catch (e) {
       setErr((e as Error).message);
@@ -99,19 +134,27 @@ export default function StellarPanel({ open, onClose }: Props) {
     }
   }
 
-  async function upvote(id: number) {
-    setBusy(`up-${id}`);
+  async function attest(id: number, approve: boolean) {
+    setBusy(`vote-${id}`);
     setErr(null);
     setMsg(null);
     try {
+      const body: Record<string, unknown> = { id, approve };
+      if (wallet.address) body.voter = wallet.address;
+
       const res = await fetch("/api/corrections", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Upvote failed");
-      setMsg(`Upvoted on Stellar · tx ${shortKey(data.txHash)}`);
+      if (!res.ok || data.error) throw new Error(data.error || "Vote failed");
+
+      let hash: string = data.txHash;
+      if (data.xdr) {
+        hash = await wallet.signAndSubmit(data.xdr);
+      }
+      setMsg(`Vote recorded · tx ${shortKey(hash)}`);
       await load();
     } catch (e) {
       setErr((e as Error).message);
@@ -151,7 +194,10 @@ export default function StellarPanel({ open, onClose }: Props) {
       <header className="head">
         <div className="title">
           <strong>Community routes on Stellar</strong>
-          <span className="sub">{total} correction{total === 1 ? "" : "s"} on-chain</span>
+          <span className="sub">
+            {total} correction{total === 1 ? "" : "s"} · reward pool{" "}
+            {stroopsToXlm(stats.pool)} XLM · paid out {stroopsToXlm(stats.totalPaid)} XLM
+          </span>
         </div>
         <button className="close" onClick={onClose} aria-label="Close">
           ✕
@@ -214,8 +260,9 @@ export default function StellarPanel({ open, onClose }: Props) {
         <section className="card">
           <h3>Submit a route correction</h3>
           <p className="hint">
-            Fares change constantly. Corrections are recorded on Stellar, so the
-            knowledge base is community-owned and auditable.
+            Submitting stakes a small amount. The community votes during a
+            24-hour window: accepted corrections refund your stake <em>and</em>{" "}
+            earn a reward from the pool; spam loses its stake.
           </p>
           <div className="row">
             <input
@@ -230,55 +277,85 @@ export default function StellarPanel({ open, onClose }: Props) {
               value={toStop}
               onChange={(e) => setToStop(e.target.value)}
             />
+            <select
+              className="input kind"
+              value={kind}
+              onChange={(e) => setKind(Number(e.target.value))}
+              aria-label="Correction type"
+            >
+              {KIND_LABELS.map((label, i) => (
+                <option key={label} value={i}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
           <input
             className="input wide"
             placeholder="What changed? (e.g. Fare now 500 naira)"
-            value={detail}
-            onChange={(e) => setDetail(e.target.value)}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
           />
           <button
             className="btn primary"
             onClick={submit}
-            disabled={busy === "submit" || !fromStop || !toStop || !detail}
+            disabled={busy === "submit" || !fromStop || !toStop || !summary}
           >
-            {busy === "submit" ? "Recording on Stellar…" : "Submit correction"}
+            {busy === "submit"
+              ? "Staking on Stellar…"
+              : wallet.address
+                ? "Stake & submit"
+                : "Submit (app-sponsored)"}
           </button>
         </section>
 
         {/* Feed */}
         <section className="card">
           <h3>Recent corrections</h3>
-          {loading && <p className="hint">Loading from the contract…</p>}
+          {loading && <p className="hint">Loading…</p>}
           {!loading && corrections.length === 0 && (
             <p className="hint">No corrections yet — be the first.</p>
           )}
           <ul className="feed">
-            {corrections.map((c, i) => {
-              const id = total - 1 - i; // recent() is newest-first
-              return (
-                <li key={`${id}-${c.timestamp}`}>
-                  <div className="c-main">
-                    <span className="route">
-                      {c.fromStop} → {c.toStop}
+            {corrections.map((c) => (
+              <li key={c.id}>
+                <div className="c-main">
+                  <span className="route">
+                    {c.routeId}{" "}
+                    <span className={`chip k${c.kind}`}>{KIND_LABELS[c.kind]}</span>{" "}
+                    <span className={`chip s${c.status}`}>
+                      {STATUS_LABELS[c.status]}
                     </span>
-                    <span className="detail">{c.detail}</span>
-                    <span className="by">
-                      by {shortKey(c.contributor)} ·{" "}
-                      {new Date(c.timestamp * 1000).toLocaleDateString()}
-                    </span>
+                  </span>
+                  <span className="detail">{c.summary}</span>
+                  <span className="by">
+                    by {shortKey(c.contributor)} ·{" "}
+                    {new Date(c.submittedAt * 1000).toLocaleDateString()} ·{" "}
+                    {c.approvals}✓ {c.rejections}✗
+                  </span>
+                </div>
+                {c.status === 0 && (
+                  <div className="votes">
+                    <button
+                      className="btn vote"
+                      onClick={() => attest(c.id, true)}
+                      disabled={busy === `vote-${c.id}`}
+                      aria-label={`Approve correction ${c.id}`}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      className="btn vote"
+                      onClick={() => attest(c.id, false)}
+                      disabled={busy === `vote-${c.id}`}
+                      aria-label={`Reject correction ${c.id}`}
+                    >
+                      ✗
+                    </button>
                   </div>
-                  <button
-                    className="btn vote"
-                    onClick={() => upvote(id)}
-                    disabled={busy === `up-${id}`}
-                    aria-label={`Upvote correction ${id}`}
-                  >
-                    ▲ {c.upvotes}
-                  </button>
-                </li>
-              );
-            })}
+                )}
+              </li>
+            ))}
           </ul>
         </section>
 
@@ -377,6 +454,9 @@ export default function StellarPanel({ open, onClose }: Props) {
           width: 100%;
           margin-bottom: 8px;
         }
+        .input.kind {
+          flex: 0 1 110px;
+        }
         .input:focus {
           box-shadow: 0 0 0 3px var(--ring);
         }
@@ -411,6 +491,29 @@ export default function StellarPanel({ open, onClose }: Props) {
           color: var(--text);
           padding: 8px 10px;
           font-size: 13px;
+        }
+        .votes {
+          display: flex;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .chip {
+          display: inline-block;
+          padding: 1px 7px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          font-size: 10.5px;
+          font-weight: 700;
+          color: var(--text-muted);
+          vertical-align: middle;
+        }
+        .chip.s1 {
+          color: var(--verify-ok);
+          border-color: var(--verify-ok);
+        }
+        .chip.s2 {
+          color: var(--danger);
+          border-color: var(--danger);
         }
         .wallet {
           display: flex;

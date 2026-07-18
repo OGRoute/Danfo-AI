@@ -18,9 +18,27 @@ export function getNetworkPassphrase(): string {
   return process.env.STELLAR_NETWORK_PASSPHRASE || Networks.TESTNET;
 }
 
-/** Deployed RouteCorrections contract id (C…). */
-export function getCorrectionsContractId(): string {
-  return process.env.STELLAR_CORRECTIONS_CONTRACT || "";
+/** Deployed danfo-registry contract id (C…). */
+export function getRegistryContractId(): string {
+  return (
+    process.env.NEXT_PUBLIC_REGISTRY_CONTRACT ||
+    process.env.REGISTRY_CONTRACT ||
+    ""
+  );
+}
+
+/** Deployed danfo-rewards contract id (C…), optional. */
+export function getRewardsContractId(): string {
+  return (
+    process.env.NEXT_PUBLIC_REWARDS_CONTRACT ||
+    process.env.REWARDS_CONTRACT ||
+    ""
+  );
+}
+
+/** Indexer REST base URL — reads prefer it over chain simulations when set. */
+export function getIndexerUrl(): string {
+  return process.env.NEXT_PUBLIC_INDEXER_URL || process.env.INDEXER_URL || "";
 }
 
 /** Horizon URL (classic operations like payments). */
@@ -34,5 +52,5 @@ export function getRpcServer(): rpc.Server {
 }
 
 export function isStellarConfigured(): boolean {
-  return !!getCorrectionsContractId();
+  return !!getRegistryContractId();
 }
