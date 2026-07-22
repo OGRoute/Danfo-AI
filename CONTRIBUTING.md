@@ -45,11 +45,11 @@ stellar --version
 ### Speech service (optional — the app defaults to browser speech)
 ```bash
 conda create -y -n yarngpt python=3.11 && conda activate yarngpt
-pip install -r yarngpt-service/requirements.txt
+pip install -r services/speech/requirements.txt
 conda install -c conda-forge ffmpeg -y
 
-# YarnGPT is third-party and NOT vendored in this repo (see LICENSE):
-./yarngpt-service/fetch-yarngpt.sh
+# YarnGPT is third-party and NOT vendored in this repo (see THIRD-PARTY-NOTICES.md):
+./services/speech/fetch-yarngpt.sh
 ```
 
 ---

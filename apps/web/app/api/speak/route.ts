@@ -23,7 +23,7 @@ const MAX_TTS_CHARS = Number(process.env.YARNGPT_MAX_CHARS || 280);
  * Text-to-speech proxy. Forwards text to a YarnGPT service (Nigerian-accented
  * TTS) and streams the generated WAV back to the browser. The YarnGPT model is
  * Python-only and heavy, so it runs as a separate service — see
- * yarngpt-service/README.md. Set YARNGPT_API_URL to point at it.
+ * services/speech/README.md. Set YARNGPT_API_URL to point at it.
  */
 
 // Our app's short language codes -> YarnGPT's language names.

@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     const joined = errors.join(" | ");
     let hint =
       "Voice input isn't available right now. Make sure the local speech service " +
-      "is running (yarngpt-service on port 8000), or configure another STT engine. " +
+      "is running (services/speech on port 8000), or configure another STT engine. " +
       "You can type your message meanwhile.";
     if (!STT_BASE && /integrator|permission denied|\b403\b/i.test(joined)) {
       hint =

@@ -1,9 +1,4 @@
 {
   "extends": "next/core-web-vitals",
-  "ignorePatterns": [
-    "node_modules/",
-    ".next/",
-    "stellar/route-corrections/target/",
-    "yarngpt-service/"
-  ]
+  "ignorePatterns": ["node_modules/", ".next/"]
 }

@@ -24,7 +24,7 @@ deploy it to a GPU box for production, and point the app at it with one env var.
    first, then the rest:
 
    ```bash
-   cd yarngpt-service
+   cd services/speech
    python -m venv .venv && source .venv/bin/activate
    pip install -r requirements.txt
    ```
