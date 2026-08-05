@@ -70,6 +70,14 @@ REGISTRY_CONTRACT=C... REWARDS_CONTRACT=C... INDEXER_SECRET_KEY=S... npm run dev
 Open http://localhost:3000, tap the ⭐ button for the corrections feed, the mic
 to talk.
 
+## Docs
+
+Full documentation lives in [`docs/`](docs/README.md) and is published with
+GitBook (`.gitbook.yaml`): protocol
+[lifecycle](docs/protocol/lifecycle.md) and [economics](docs/protocol/economics.md),
+the [contract reference](docs/contracts/registry.md), per-persona guides, and the
+[developer guide](docs/developers/quickstart.md).
+
 ## Status
 
 Testnet software, unaudited contracts. See [SECURITY.md](SECURITY.md).

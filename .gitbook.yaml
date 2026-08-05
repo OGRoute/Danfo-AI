@@ -1,0 +1,10 @@
+root: ./docs/
+
+structure:
+  readme: README.md
+  summary: SUMMARY.md
+
+redirects:
+  protocol: protocol/lifecycle.md
+  contracts: contracts/registry.md
+  developers: developers/quickstart.md
