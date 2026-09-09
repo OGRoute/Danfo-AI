@@ -8,6 +8,7 @@ import AuthGate from "../components/AuthGate";
 import NotificationBell from "../components/NotificationBell";
 import HistoryDrawer from "../components/HistoryDrawer";
 import MapPanel from "../components/MapPanel";
+import IntronVoiceInput from "../components/IntronVoiceInput";
 import { findStopsInText } from "../lib/lagos-stops";
 import { useVoiceRecorder } from "../lib/useVoiceRecorder";
 import { useTextToSpeech } from "../lib/useTextToSpeech";
@@ -72,6 +73,31 @@ export default function Home() {
     () => langRef.current || undefined
   );
   const tts = useTextToSpeech();
+
+  // Intron Sahara streaming STT (client widget). Takes over voice input when a
+  // public Intron key is configured; the mic above then stays hidden and the
+  // widget's own record button streams text straight into the input.
+  const intronKey = process.env.NEXT_PUBLIC_INTRON_API_KEY || "";
+  const intronActive = !!intronKey;
+
+  // Text the rider had typed before an Intron session started, so the streamed
+  // transcript is appended to (not clobbering) it.
+  const intronBaseRef = useRef<string | null>(null);
+  function handleIntronStreaming(text: string) {
+    setInput((prev) => {
+      if (intronBaseRef.current === null) intronBaseRef.current = prev;
+      const base = intronBaseRef.current;
+      return base ? `${base} ${text}` : text;
+    });
+  }
+  function handleIntronFinal(text: string) {
+    setInput((prev) => {
+      const base = intronBaseRef.current;
+      intronBaseRef.current = null;
+      const prefix = base !== null ? base : prev;
+      return prefix ? `${prefix} ${text}` : text;
+    });
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
@@ -267,13 +293,13 @@ export default function Home() {
           )}
         </section>
 
-        {voice.unavailable && (
+        {voice.unavailable && !intronActive && (
           <div className="voicehint" role="status">
             <span aria-hidden>🎙️</span> Voice input isn’t set up yet — type your
             message, or tap the mic to retry.
           </div>
         )}
-        {(tts.error || (!voice.unavailable && voice.error)) && (
+        {(tts.error || (!intronActive && !voice.unavailable && voice.error)) && (
           <div className="micerror" role="alert">
             {tts.error || voice.error}
           </div>
@@ -297,7 +323,7 @@ export default function Home() {
             </select>
           )}
 
-          {voice.supported && (
+          {voice.supported && !intronActive && (
             <button
               type="button"
               className={`mic ${recording ? "live" : ""} ${
@@ -341,6 +367,14 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {intronActive && (
+        <IntronVoiceInput
+          apiKey={intronKey}
+          onStreaming={handleIntronStreaming}
+          onFinal={handleIntronFinal}
+        />
+      )}
 
       <style jsx>{`
         .boot {

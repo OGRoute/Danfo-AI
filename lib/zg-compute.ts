@@ -25,14 +25,23 @@ async function getBroker() {
   return brokerPromise;
 }
 
-// 0G Compute locks funds in a PER-PROVIDER sub-account, and the network
-// requires that sub-account to hold a minimum reserve (currently 1.0 0G) before
-// it accepts a request. Funds flow: wallet --deposit--> main account
-// --transferFund--> provider sub-account. We top the sub-account to a small
-// buffer above the minimum so request fees don't dip it back under.
-const MIN_BALANCE_OG = Number(process.env.COMPUTE_MIN_BALANCE_OG || 1.0);
-// Fund to exactly the network minimum by default to consume the least 0G.
-const TARGET_BALANCE_OG = Number(process.env.COMPUTE_TARGET_BALANCE_OG || 1.0);
+// 0G Compute locks funds in a PER-PROVIDER sub-account. Funds flow:
+// wallet --deposit--> main account --transferFund--> provider sub-account.
+//
+// Cost control: the 0G SDK auto-transfers a full 1 0G whenever the provider's
+// sub-account doesn't exist yet or is completely empty (minTransferAmount /
+// minTargetThreshold inside @0glabs/0g-serving-broker). By pre-funding the
+// sub-account ourselves BEFORE the first acknowledge/inference call, that
+// 1 0G auto-transfer never triggers — requests only need the balance to stay
+// above a tiny per-token trigger threshold, so 0.5 0G comfortably covers
+// thousands of requests. We top up to a small buffer above the minimum so
+// request fees don't drain the sub-account back to zero (which would re-arm
+// the SDK's 1 0G auto top-up).
+const MIN_BALANCE_OG = Number(process.env.COMPUTE_MIN_BALANCE_OG || 0.5);
+// Fund to a small buffer above the minimum to keep total spend under ~0.6 0G.
+const TARGET_BALANCE_OG = Number(
+  process.env.COMPUTE_TARGET_BALANCE_OG || Math.max(MIN_BALANCE_OG + 0.05, 0.55)
+);
 // Cap the response length to reduce 0G Compute token spend per request.
 const MAX_TOKENS = Number(process.env.COMPUTE_MAX_TOKENS || 512);
 

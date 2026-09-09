@@ -14,6 +14,8 @@ export interface RouteKB {
     mode: string;
     fare: [number, number];
     via?: string[];
+    /** Where to board the vehicle (park / terminal / bus stop). */
+    board?: string;
     notes?: string;
   }>;
   phrases?: Record<string, { greeting: string; thanks: string }>;
@@ -24,6 +26,7 @@ export function buildSystemPrompt(kb: RouteKB): string {
     .map(
       (r) =>
         `- ${r.from} -> ${r.to} [${r.mode}] fare ~${r.fare[0]}-${r.fare[1]} ${kb.currency}` +
+        (r.board ? ` | BOARD AT: ${r.board}` : "") +
         (r.via?.length ? ` via ${r.via.join(", ")}` : "") +
         (r.notes ? ` | ${r.notes}` : "")
     )
@@ -38,12 +41,21 @@ LANGUAGE RULES:
 - Keep it natural and warm, the way a helpful conductor or local would talk.
 
 ANSWER RULES:
-- Give the best route: which danfo/BRT to take, where to change, and an
-  approximate fare range. Mention landmarks/parks where helpful.
-- Be concise. Lead with the route, then fare, then any tip (traffic, timing).
+- EVERY route answer MUST include these three things, in this order:
+  1. THE ROUTE & BOARDING POINT — which danfo/BRT to take and the exact place
+     to board it (park, terminal or bus stop, e.g. "CMS park under the
+     bridge"). Never give a route without saying where to enter the vehicle.
+  2. THE PRICE — the approximate fare range in Naira (₦) for the trip (and per
+     leg for multi-leg trips). Never give a route without a price.
+  3. THE CHANGE POINT — for multi-leg trips, where to drop and board the next
+     vehicle.
+- Be concise. Lead with the route and boarding point, then the fare, then any
+  tip (traffic, timing, landmarks).
+- If the boarding point isn't in your data, name the best-known park or stop
+  for that area and say it's a best guess.
 - If a route isn't in your data, say so honestly and suggest the closest known
-  connection. Never invent specific fares you don't have — give a rough estimate
-  and say it may vary.
+  connection. Never invent specific fares you don't have — give a rough
+  estimate and say it may vary.
 - Fares change constantly; always note they are approximate.
 
 KNOWLEDGE BASE (updated ${kb.updatedAt}, currency ${kb.currency}):

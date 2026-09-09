@@ -7,7 +7,13 @@ DanfoAI is a voice-and-text agent that helps Lagos residents navigate *danfo*
 Hausa, Nigerian Pidgin, and English**. No maps, no menus — just talk.
 
 > _"Mo fẹ lọ si Oshodi lati CMS"_ → DanfoAI replies in Yoruba with the best
-> danfo route, where to change, and a fare estimate.
+> danfo route, **where to board it, the fare in ₦**, and where to change.
+
+Voice input is powered by **Intron Sahara** streaming speech-to-text
+(`@intron_health/intron_transcriber_streaming`) — African-accent ASR that
+natively understands Yoruba, Igbo, Hausa, English and Nigerian Pidgin, with
+live transcripts while you speak. When Intron isn't configured, the app falls
+back to browser Web Speech → local Whisper → 0G Whisper.
 
 Built for the **0G Zero Cup**.
 
@@ -43,8 +49,13 @@ User: "Mo fẹ lọ si Oshodi lati CMS"
         │
         └─► 0G Chain    ──►  community corrections registry (read/write)
         ▼
-Reply in Yoruba: route, change point, fare estimate ✓ verified on 0G
+Reply in Yoruba: route, boarding point, fare in ₦, change point ✓ verified on 0G
 ```
+
+**Cost note:** the app pre-funds each 0G Compute provider sub-account with
+0.5 0G *before* the first request. That sidesteps the SDK's automatic 1 0G
+transfer (which fires whenever a sub-account is missing or empty), keeping the
+wallet's total 0G spend under ~0.6 per provider.
 
 ---
 
@@ -101,6 +112,8 @@ danfo-ai/
 │   ├── zg-chain.ts              # RouteCorrections contract (ethers v6)
 │   ├── prompt.ts                # multilingual system prompt builder
 │   └── routes-kb.ts             # KB loader (0G Storage → seed fallback)
+├── components/
+│   └── IntronVoiceInput.tsx     # Intron Sahara streaming STT widget
 ├── contracts/
 │   └── RouteCorrections.sol     # community corrections registry
 ├── scripts/

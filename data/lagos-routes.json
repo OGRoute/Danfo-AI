@@ -13,46 +13,55 @@
     {
       "from": "CMS", "to": "Oshodi", "mode": "danfo", "fare": [400, 600],
       "via": ["Costain", "Surulere", "Ojuelegba"],
+      "board": "CMS danfo park, under the bridge by Tafawa Balewa Square, Marina",
       "notes": "Frequent danfo from CMS park. Heavy traffic 7-9am and 4-7pm."
     },
     {
       "from": "Oshodi", "to": "Ikeja", "mode": "brt", "fare": [300, 400],
       "via": ["Bolade"],
+      "board": "Oshodi BRT terminal, Bolade axis of Agege Motor Road",
       "notes": "BRT lane available; smoother than danfo in rush hour."
     },
     {
       "from": "CMS", "to": "Ikeja", "mode": "mixed", "fare": [700, 1000],
       "via": ["Oshodi"],
+      "board": "CMS danfo park, under the bridge by Tafawa Balewa Square, Marina",
       "notes": "Take danfo/BRT CMS->Oshodi, then BRT Oshodi->Ikeja. Change at Oshodi terminal."
     },
     {
       "from": "Obalende", "to": "Lekki Phase 1", "mode": "danfo", "fare": [400, 700],
       "via": ["Victoria Island"],
+      "board": "Obalende under-bridge danfo park",
       "notes": "Danfo from Obalende under-bridge park. Ask for Lekki first gate."
     },
     {
       "from": "Yaba", "to": "Oshodi", "mode": "danfo", "fare": [300, 500],
       "via": ["Ojuelegba"],
+      "board": "Yaba bus stop on Herbert Macaulay Way, by the Oyingbo market end",
       "notes": "Board at Yaba bus stop heading toward Ojuelegba then Oshodi."
     },
     {
       "from": "Mile 2", "to": "CMS", "mode": "danfo", "fare": [400, 600],
       "via": ["Costain"],
+      "board": "Mile 2 danfo park on the Badagry Expressway service road",
       "notes": "Apapa-Oshodi expressway can be slow due to trucks."
     },
     {
       "from": "Ikorodu", "to": "TBS", "mode": "brt", "fare": [500, 700],
       "via": ["Mile 12", "Ketu", "Ojota"],
+      "board": "Ikorodu BRT terminal by the Ikorodu roundabout (also serves Agric)",
       "notes": "Ikorodu BRT corridor is the fastest option into Lagos Island."
     },
     {
       "from": "Berger", "to": "Oshodi", "mode": "danfo", "fare": [300, 500],
       "via": ["Ojota", "Maryland"],
+      "board": "Berger bus stop on the Lagos-Ibadan Expressway service lane",
       "notes": "Along the Lagos-Ibadan expressway service lane."
     },
     {
       "from": "Ajah", "to": "CMS", "mode": "danfo", "fare": [700, 1200],
       "via": ["Lekki Phase 1", "Victoria Island", "Obalende"],
+      "board": "Ajah junction danfo park, by the flyover on the Lekki-Epe Expressway",
       "notes": "Long route along Lekki-Epe expressway; tolls and traffic add time."
     }
   ],

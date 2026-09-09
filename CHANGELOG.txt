@@ -1,5 +1,58 @@
 ===============================================================================
  DanfoAI — Changelog
+ Branch: upgrade-r17
+ Date:   2026-09-09
+===============================================================================
+
+-------------------------------------------------------------------------------
+ CHANGED — 0G Compute cost: ~1.1 0G → under 0.6 0G per provider
+-------------------------------------------------------------------------------
+
+  - The 0G SDK (@0glabs/0g-serving-broker) auto-transfers a full 1 0G into a
+    provider sub-account whenever it doesn't exist or is empty — that was the
+    source of the ~1.1 0G startup cost.
+  - lib/zg-compute.ts now pre-funds each provider sub-account to 0.5 0G
+    (COMPUTE_MIN_BALANCE_OG) with a 0.55 0G top-up target
+    (COMPUTE_TARGET_BALANCE_OG) BEFORE the first acknowledge/inference call,
+    so the SDK's 1 0G auto-transfer never fires. Total wallet spend per
+    provider is now ~0.555 0G + gas.
+  - .env.example funding docs updated to match.
+
+-------------------------------------------------------------------------------
+ ADDED — Intron Sahara streaming speech-to-text (primary voice input)
+-------------------------------------------------------------------------------
+
+  - Integrated @intron_health/intron_transcriber_streaming (Intron's streaming
+    ASR widget) as the primary voice input. Intron is built for African
+    accents and natively supports Yoruba, Igbo, Hausa, English and Nigerian
+    Pidgin.
+  - New components/IntronVoiceInput.tsx: loads the widget client-side,
+    captures live partial transcripts via the widget's document events
+    (intronInferEventStreamTextReceived / intronInferEventTranscriptResult)
+    and feeds them into the chat input's React state (the widget never writes
+    into the DOM behind React's back).
+  - Enabled by setting NEXT_PUBLIC_INTRON_API_KEY (voice.intron.io → View
+    Integration). When set, the widget's record button replaces the built-in
+    mic. Falls back cleanly: browser Web Speech → local Whisper → server-side
+    Intron file API → 0G Whisper (all unchanged).
+  - The model version (Sahara) is managed Intron-side; the package exposes no
+    model selector.
+
+-------------------------------------------------------------------------------
+ CHANGED — Route answers always include price + boarding location
+-------------------------------------------------------------------------------
+
+  - lib/prompt.ts: ANSWER RULES now require every route reply to include, in
+    order: (1) the route + exact boarding point (park/terminal/bus stop),
+    (2) the approximate fare in ₦ (per leg for multi-leg trips), (3) the
+    change point for multi-leg trips.
+  - data/lagos-routes.json: every seed route now carries a `board` field with
+    the specific park/stop where the vehicle is boarded (e.g. "CMS danfo park,
+    under the bridge by Tafawa Balewa Square"). Re-run `npm run seed` and
+    update ROUTES_ROOT_HASH to push the richer KB to 0G Storage.
+
+===============================================================================
+ DanfoAI — Changelog
  Branch: upgrade-r16
  Date:   2026-07-03
 ===============================================================================
