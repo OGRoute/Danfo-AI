@@ -39,7 +39,8 @@ function clerkAppearance(dark: boolean) {
  * is required to use the app, in keeping with a low-friction transit tool.
  */
 export default function AuthGate() {
-  const { connectWallet, continueAnonymous, connecting, error, clerkEnabled } = useAuth();
+  const { connectWallet, continueAnonymous, connecting, error, clerkEnabled, clerkUnavailable } =
+    useAuth();
   const { resolved } = useTheme();
 
   return (
@@ -67,7 +68,9 @@ export default function AuthGate() {
           <>
             <ClerkLoading>
               <div className="clerk-loading" role="status">
-                Loading sign-in…
+                {clerkUnavailable
+                  ? "Google / email sign-in couldn't load — check your connection. You can still connect a wallet or continue without an account."
+                  : "Loading sign-in…"}
               </div>
             </ClerkLoading>
             <ClerkLoaded>

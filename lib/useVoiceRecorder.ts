@@ -40,6 +40,8 @@ const IDLE_STOP_MS = 30_000;
 const MAX_SESSION_MS = 5 * 60_000;
 // Ignore clicks and bumps shorter than this.
 const MIN_SPEECH_MS = 240;
+// Intron needs at least 1 s of audio, so a pause never ends a phrase sooner.
+const MIN_SEGMENT_MS = 1500;
 const TICK_MS = 60;
 
 const UNAVAILABLE_KEY = "danfo-voice-unavailable";
@@ -74,6 +76,8 @@ const extensionFor = (mime: string) =>
 
 interface Capabilities {
   intron: boolean;
+  /** Why a configured Intron can't be used right now (e.g. out of credit). */
+  intronProblem: string | null;
   local: boolean;
 }
 
@@ -82,10 +86,10 @@ function loadCapabilities(): Promise<Capabilities> {
   if (!capabilities) {
     capabilities = fetch("/api/transcribe")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => ({ intron: !!d?.intron, local: !!d?.local }))
+      .then((d) => ({ intron: !!d?.intron, intronProblem: d?.intronProblem ?? null, local: !!d?.local }))
       .catch(() => {
         capabilities = null; // retry next time
-        return { intron: false, local: false };
+        return { intron: false, intronProblem: null, local: false };
       });
   }
   return capabilities;
@@ -151,7 +155,10 @@ async function uploadPhrase(ctl: Controller, s: ServerSession, blob: Blob) {
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.error) {
-      if (res.status === 503) ctl.markUnavailable();
+      if (res.status === 503) {
+        ctl.markUnavailable();
+        capabilities = null; // re-check engines on the next tap (may switch to the browser)
+      }
       throw new Error(data.error || `Transcription failed (${res.status})`);
     }
     // Auto-detect runs once; the rest of the session reuses the result.
@@ -247,7 +254,7 @@ function tick(ctl: Controller, s: ServerSession) {
 
   const heard = s.speechMs >= MIN_SPEECH_MS;
   const age = now - s.segmentStart;
-  if (heard && now - s.lastVoice >= SILENCE_CUT_MS) cutSegment(ctl, s, true);
+  if (heard && now - s.lastVoice >= SILENCE_CUT_MS && age >= MIN_SEGMENT_MS) cutSegment(ctl, s, true);
   else if (age >= MAX_SEGMENT_MS) cutSegment(ctl, s, heard);
   else if (!heard && age >= 8000) cutSegment(ctl, s, false); // discard long silence
 
@@ -483,7 +490,9 @@ export function useVoiceRecorder(options: VoiceOptions): UseVoiceRecorderResult 
     if (choice === "browser") {
       if (language !== "en") {
         setNotice(
-          "Pidgin, Yoruba, Igbo, Hausa and auto-detect need Intron voice, which isn't set up on this server — using the browser's English recogniser for now."
+          caps.intronProblem
+            ? `Intron voice isn't working right now (${caps.intronProblem}) — using the browser's English recogniser, which won't understand Pidgin, Yoruba, Igbo or Hausa well.`
+            : "Pidgin, Yoruba, Igbo, Hausa and auto-detect need Intron voice, which isn't set up on this server — using the browser's English recogniser for now."
         );
       }
       const b = startBrowserSession(ctl);

@@ -1,8 +1,32 @@
 ===============================================================================
  DanfoAI — Changelog
  Branch: upgrade-r18
- Date:   2026-09-14
+ Date:   2026-09-14 (fixes 2026-09-15)
 ===============================================================================
+
+-------------------------------------------------------------------------------
+ FIXED — found while testing the running app (2026-09-15)
+-------------------------------------------------------------------------------
+
+  - INTRON_STT_URL / INTRON_TTS_URL set to Intron's wss:// streaming URLs made
+    every Intron call fail ("fetch failed"): TTS returned 500 and voice input
+    503. Non-http(s) overrides are now ignored with a warning.
+  - Intron errors returned inside a JSON body (e.g. "insufficient balance to
+    process the file") were read as silence. They are now errors; account
+    problems are remembered for 10 minutes so the mic switches to the browser
+    recogniser and explains why ("the Intron account is out of credit").
+  - Clips under 1 s (rejected by Intron) are treated as no speech, and a pause
+    no longer ends a phrase before 1.5 s of audio.
+  - Intron TTS audio is served as audio/wav (the bucket says octet-stream).
+  - Hydration error: FlipWords (a <div>) was nested inside a <p>.
+  - Added a favicon (was a 404 on every page load).
+  - The app stayed on a blank screen when Clerk's script couldn't load (slow
+    or blocked connection to Clerk). After 8 s it now falls back to wallet and
+    anonymous sign-in, and the sign-in card says Google/email is unavailable.
+  - With real Clerk keys, clerkMiddleware no longer runs: nothing uses
+    server-side auth(), and its handshake redirect made every first page load
+    wait on Clerk's servers (214 s on a flaky connection, then a redirect
+    loop). Keyless development mode still uses it.
 
 -------------------------------------------------------------------------------
  FIXED — Voice input

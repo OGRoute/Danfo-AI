@@ -307,10 +307,10 @@ export default function Home() {
         <section className="chat" ref={scrollRef}>
           {messages.length === 0 && (
             <div className="empty">
-              <p className="emptylead">
+              <div className="emptylead">
                 <FlipWords words={GREETINGS} duration={2500} /> Where you dey go
                 today?
-              </p>
+              </div>
               <div className="samples">
                 {SAMPLES.map((s) => (
                   <button key={s} className="sample" onClick={() => send(s)}>
@@ -610,7 +610,7 @@ export default function Home() {
           font-size: 18px;
           font-weight: 700;
           color: var(--text);
-          margin-bottom: 16px;
+          margin: 16px 0;
         }
         .samples {
           display: flex;

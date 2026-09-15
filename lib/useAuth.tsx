@@ -30,6 +30,8 @@ interface AuthValue {
   address: string | null;
   /** Whether hosted sign-in (Clerk: Google / email / etc.) is configured. */
   clerkEnabled: boolean;
+  /** Clerk is configured but its script didn't load (offline, blocked, timeout). */
+  clerkUnavailable: boolean;
   connecting: boolean;
   error: string | null;
   connectWallet: () => Promise<void>;
@@ -211,6 +213,7 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
       ...base,
       address: id.address,
       clerkEnabled: false,
+      clerkUnavailable: false,
       connecting: id.connecting,
       error: id.error,
       connectWallet: id.connectWallet,
@@ -224,14 +227,30 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// How long to wait for Clerk's script before letting people in without it.
+const CLERK_LOAD_TIMEOUT_MS = 8000;
+
 /** Provider used when Clerk IS configured (hosted sign-in + wallet + anonymous). */
 export function ClerkAuthProvider({ children }: { children: React.ReactNode }) {
   const id = useLocalIdentity();
   const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
 
+  // If Clerk can't load (offline, blocked, CDN timeout) don't leave the whole
+  // app on a blank loading screen: fall back to wallet + anonymous sign-in.
+  // Should Clerk load later, its sign-in appears as normal.
+  const [clerkTimedOut, setClerkTimedOut] = useState(false);
+  useEffect(() => {
+    if (isLoaded) return;
+    const t = setTimeout(() => setClerkTimedOut(true), CLERK_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [isLoaded]);
+  const clerkUnavailable = !isLoaded && clerkTimedOut;
+
   const value = useMemo<AuthValue>(() => {
-    const loading = !isLoaded || !id.ready;
+    // Riders who already continued anonymously or with a wallet don't need to
+    // wait for Clerk; a Clerk session still takes over once it loads.
+    const loading = !id.ready || (!isLoaded && !clerkTimedOut && !id.local);
 
     // Hosted (Clerk) session takes priority over local wallet/anonymous.
     if (!loading && isSignedIn && user) {
@@ -247,6 +266,7 @@ export function ClerkAuthProvider({ children }: { children: React.ReactNode }) {
         displayName: name,
         address: id.address,
         clerkEnabled: true,
+        clerkUnavailable,
         connecting: id.connecting,
         error: id.error,
         connectWallet: id.connectWallet,
@@ -267,6 +287,7 @@ export function ClerkAuthProvider({ children }: { children: React.ReactNode }) {
       ...base,
       address: id.address,
       clerkEnabled: true,
+      clerkUnavailable,
       connecting: id.connecting,
       error: id.error,
       connectWallet: id.connectWallet,
@@ -280,6 +301,8 @@ export function ClerkAuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isLoaded,
+    clerkTimedOut,
+    clerkUnavailable,
     isSignedIn,
     user,
     clerk,

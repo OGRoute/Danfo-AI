@@ -8,9 +8,24 @@
  */
 import { isLangCode, pickTranscript, type LangCode } from "./language-detect";
 
-const INTRON_BASE = (process.env.INTRON_API_BASE || "https://infer.voice.intron.io").replace(/\/$/, "");
-const STT_URL = process.env.INTRON_STT_URL || `${INTRON_BASE}/file/v1/upload/sync`;
-const TTS_URL = process.env.INTRON_TTS_URL || `${INTRON_BASE}/tts/v1/generate`;
+/**
+ * Endpoint overrides must be HTTP(S) request/response endpoints. Intron's
+ * wss:// streaming URLs speak a different protocol and make fetch() fail, so
+ * they're ignored with a warning instead of silently breaking voice.
+ */
+function httpEndpoint(name: string, fallback: string): string {
+  const value = (process.env[name] || "").trim();
+  if (!value) return fallback;
+  if (/^https?:\/\//i.test(value)) return value;
+  console.warn(
+    `${name}=${value} isn't an http(s) endpoint (streaming wss:// URLs aren't used here) — using ${fallback} instead.`
+  );
+  return fallback;
+}
+
+const INTRON_BASE = httpEndpoint("INTRON_API_BASE", "https://infer.voice.intron.io").replace(/\/$/, "");
+const STT_URL = httpEndpoint("INTRON_STT_URL", `${INTRON_BASE}/file/v1/upload/sync`);
+const TTS_URL = httpEndpoint("INTRON_TTS_URL", `${INTRON_BASE}/tts/v1/generate`);
 
 // Intron's sync endpoints can take up to ~120 s before answering 503.
 const REQUEST_TIMEOUT_MS = 125_000;
@@ -27,6 +42,26 @@ const AUTO_LANGUAGES: LangCode[] = (process.env.INTRON_AUTO_LANGUAGES || "pcm,yo
   .filter(isLangCode);
 
 export const INTRON_TTS_MAX_CHARS = 4096;
+
+// Account-level problems (no credit left, rejected key) don't fix themselves
+// between phrases, so remember them for a while: /api/transcribe reports Intron
+// as unusable and the client switches to another engine.
+const ACCOUNT_ERROR = /insufficient balance|unauthori[sz]ed|invalid (api )?key|permission denied|integrator/i;
+const ACCOUNT_ERROR_TTL_MS = 10 * 60_000;
+let sttAccountError: { message: string; at: number } | null = null;
+
+/** The current Intron speech-to-text account problem, if any. */
+export function intronSttProblem(): string | null {
+  if (sttAccountError && Date.now() - sttAccountError.at < ACCOUNT_ERROR_TTL_MS) {
+    return sttAccountError.message;
+  }
+  return null;
+}
+
+function sttFailure(language: LangCode, detail: string): Error {
+  if (ACCOUNT_ERROR.test(detail)) sttAccountError = { message: detail, at: Date.now() };
+  return new Error(`Intron transcription failed (${language}): ${detail}`);
+}
 
 export function isIntronConfigured(): boolean {
   return !!process.env.INTRON_API_KEY;
@@ -50,12 +85,22 @@ async function transcribeAs(audio: Buffer, filename: string, language: LangCode)
     body: form,
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
-  if (!res.ok) {
-    throw new Error(
-      `Intron transcription failed (${language}): ${res.status} ${await res.text().catch(() => "")}`
-    );
+  const raw = await res.text().catch(() => "");
+  let data: any = null;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    /* not JSON — handled below */
   }
-  const data = await res.json();
+  // Intron reports some failures (e.g. an account out of credit) as JSON with
+  // status "Error", so check the body as well as the HTTP status.
+  if (!res.ok || data?.status !== "Ok") {
+    const detail = String(data?.message ?? (raw || `HTTP ${res.status}`));
+    // Clips shorter than a second are rejected: that's "no speech", not a failure.
+    if (/less than minimum/i.test(detail)) return "";
+    throw sttFailure(language, detail);
+  }
+  sttAccountError = null;
   return String(data?.data?.audio_transcript ?? "").trim();
 }
 
@@ -134,8 +179,10 @@ export async function synthesizeWithIntron(
   }
   if (!audioRes.ok) throw new Error(`Couldn't download Intron audio: ${audioRes.status}`);
 
+  // The storage bucket labels files binary/octet-stream; Safari won't play that.
+  const type = audioRes.headers.get("content-type") || "";
   return {
     audio: Buffer.from(await audioRes.arrayBuffer()),
-    contentType: audioRes.headers.get("content-type") || "audio/wav",
+    contentType: type.startsWith("audio/") ? type : "audio/wav",
   };
 }

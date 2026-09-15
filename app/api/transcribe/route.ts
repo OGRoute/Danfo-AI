@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Agent, fetch as undiciFetch, FormData as UndiciFormData } from "undici";
 import { transcribe } from "../../../lib/zg-speech";
-import { isIntronConfigured, transcribeWithIntron } from "../../../lib/intron-speech";
+import {
+  intronSttProblem,
+  isIntronConfigured,
+  transcribeWithIntron,
+} from "../../../lib/intron-speech";
 import { detectLanguage, isLangCode, type LangCode } from "../../../lib/language-detect";
 
 export const runtime = "nodejs";
@@ -68,7 +72,18 @@ function languageOf(text: string, reported?: string): LangCode {
  * between server transcription (Intron / Whisper) and the browser recogniser.
  */
 export async function GET() {
-  return NextResponse.json({ intron: isIntronConfigured(), local: await localSttHealthy() });
+  const problem = isIntronConfigured() ? intronSttProblem() : null;
+  return NextResponse.json({
+    intron: isIntronConfigured() && !problem,
+    intronProblem: problem ? friendlyIntronProblem(problem) : null,
+    local: await localSttHealthy(),
+  });
+}
+
+function friendlyIntronProblem(detail: string): string {
+  return /insufficient balance/i.test(detail)
+    ? "the Intron account is out of credit"
+    : "the Intron key was rejected";
 }
 
 /**
@@ -136,10 +151,18 @@ export async function POST(req: NextRequest) {
       "Voice input isn't available right now. Add INTRON_API_KEY for Nigerian-language " +
       "speech recognition, or start the local speech service (yarngpt-service on port 8000). " +
       "You can type your message meanwhile.";
-    if (isIntronConfigured() && /integrator|permission denied|\b40[13]\b/i.test(joined)) {
-      hint =
-        "The Intron key was rejected — check INTRON_API_KEY and that the account is approved " +
-        "for API access (voice@intron.io).";
+    if (isIntronConfigured()) {
+      if (/insufficient balance/i.test(joined)) {
+        hint =
+          "Intron speech recognition is out of credit on this account — top it up at " +
+          "voice.intron.io. Tap the mic again to use the browser's English recogniser, or type.";
+      } else if (/integrator|permission denied|unauthori|\b40[13]\b/i.test(joined)) {
+        hint =
+          "The Intron key was rejected — check INTRON_API_KEY and that the account is approved " +
+          "for API access (voice@intron.io).";
+      } else {
+        hint = `Voice input failed (${errors[0]}). You can type your message meanwhile.`;
+      }
     }
     return NextResponse.json({ error: hint }, { status: 503 });
   } catch (e) {

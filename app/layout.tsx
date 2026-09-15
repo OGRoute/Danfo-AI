@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "DanfoAI — Lagos transit, in your language",
   description:
     "Conversational Nigerian transit agent for danfo and BRT routes, powered by 0G decentralized AI.",
+  icons: { icon: "/danfoai_logo.png" },
 };
 
 export const viewport: Viewport = {
