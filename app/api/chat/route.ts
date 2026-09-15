@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { danfoChat, discoverProvider } from "../../../lib/zg-compute";
 import { loadRouteKB } from "../../../lib/routes-kb";
-import { buildSystemPrompt, composeAnswer, replyKeepsFacts } from "../../../lib/prompt";
+import { buildSystemPrompt, replyKeepsFacts } from "../../../lib/prompt";
+import { composeAnswer } from "../../../lib/compose-answer";
 import { planTrip } from "../../../lib/route-planner";
-import {
-  LANGUAGE_NAMES,
-  detectLanguage,
-  isLangCode,
-  type LangCode,
-} from "../../../lib/language-detect";
+import { detectLanguage, isLangCode, type LangCode } from "../../../lib/language-detect";
 import { isTimeoutError } from "../../../lib/zg-provider";
 import type { LatLng } from "../../../lib/lagos-stops";
 
@@ -22,11 +18,12 @@ export const maxDuration = 120;
 const HISTORY_TURNS = 6;
 
 // Languages the chat model may phrase trip answers in. The only testnet chat
-// model (qwen2.5-omni-7b) garbles Yoruba, Igbo and Hausa, so trips asked in
-// those get the exact computed answer in English. Widen when 0G offers a
-// stronger model.
+// model (qwen2.5-omni-7b) garbles Yoruba, Igbo and Hausa and drifts into
+// English when asked for Pidgin, so trips asked in those are answered straight
+// from the composed answer in that language. Widen when 0G offers a stronger
+// model.
 const MODEL_REPLY_LANGUAGES = new Set(
-  (process.env.MODEL_REPLY_LANGUAGES || "en,pcm")
+  (process.env.MODEL_REPLY_LANGUAGES || "en")
     .split(",")
     .map((s) => s.trim())
     .filter(isLangCode)
@@ -75,14 +72,16 @@ export async function POST(req: NextRequest) {
       ? body.language
       : detectLanguage(userTexts[userTexts.length - 1] ?? "").code;
 
-    const answer = composeAnswer(plan);
-    if (answer && !MODEL_REPLY_LANGUAGES.has(language)) {
+    // The English answer is what the model's text is checked against; the local
+    // one is the reply in the rider's own language.
+    const answer = composeAnswer(plan, "en");
+    const localAnswer = composeAnswer(plan, language);
+    if (localAnswer && !MODEL_REPLY_LANGUAGES.has(language)) {
       return NextResponse.json({
-        reply: answer,
+        reply: localAnswer,
         plan,
-        language: "en",
+        language,
         source: "planner",
-        note: `The 0G testnet model can't write ${LANGUAGE_NAMES[language]} reliably yet, so this is the exact plan in English.`,
         verified: false,
         kbSource: source,
       });
@@ -100,23 +99,17 @@ export async function POST(req: NextRequest) {
     // text lost or changed facts, show the computed answer instead.
     let reply = result.reply.trim();
     let replySource: "model" | "planner" = "model";
-    let note: string | undefined;
     if (answer && !replyKeepsFacts(reply, plan, answer, language)) {
-      reply = answer;
+      reply = localAnswer ?? answer;
       replySource = "planner";
-      if (language !== "en") {
-        note = `The 0G model's ${LANGUAGE_NAMES[language]} reply lost some details, so this is the exact plan in English.`;
-      }
     }
     if (!reply) reply = "Sorry, I couldn't put that answer together — please try asking again.";
 
     return NextResponse.json({
       reply,
       plan,
-      // The language the reply is actually written in (drives text-to-speech).
-      language: replySource === "planner" ? "en" : language,
+      language,
       source: replySource,
-      note,
       verified: replySource === "model" && result.verified,
       model: result.model,
       provider: result.provider,

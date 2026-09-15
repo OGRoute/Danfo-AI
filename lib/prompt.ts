@@ -6,22 +6,16 @@
  * comparisons backwards. So the server does the reasoning:
  *  - lib/route-planner.ts computes the trip from the route knowledge base
  *    (loaded from 0G Storage at runtime), and
- *  - composeAnswer() turns it into the complete, detailed reply in English.
- * The model's job is to rephrase that reply naturally, or translate it into
- * Pidgin, Yoruba, Igbo or Hausa. It doesn't always manage (it can loop in
- * Yoruba), so replyKeepsFacts() checks its text and the chat route falls back
- * to the computed answer when facts were lost or changed.
+ *  - lib/compose-answer.ts writes the complete, detailed reply from it, in
+ *    English, Pidgin, Yoruba, Igbo or Hausa.
+ * For English and Pidgin the model rephrases that reply naturally;
+ * replyKeepsFacts() checks its text and the chat route falls back to the
+ * composed answer when facts were lost or changed.
  */
 import { LANGUAGE_NAMES, type LangCode } from "./language-detect";
 import { normalizeText } from "./lagos-stops";
-import {
-  formatMinutes,
-  formatNaira,
-  relevantRoutes,
-  type Itinerary,
-  type TripLeg,
-  type TripPlan,
-} from "./route-planner";
+import { composeAnswer } from "./compose-answer";
+import { formatMinutes, formatNaira, relevantRoutes, type TripPlan } from "./route-planner";
 
 export interface KBRoute {
   from: string;
@@ -65,25 +59,6 @@ const VEHICLE_NAME: Record<string, string> = {
   keke: "keke (tricycle)",
 };
 
-const VEHICLE_SHORT: Record<string, string> = {
-  danfo: "danfo",
-  brt: "BRT bus",
-  rail: "train",
-  ferry: "ferry",
-  keke: "keke",
-};
-
-const TAKE_VEHICLE: Record<string, string> = {
-  danfo: "a danfo (yellow bus)",
-  brt: "the BRT bus",
-  rail: "the train",
-  ferry: "the ferry",
-  keke: "a keke",
-};
-
-// Cash to the conductor, or the Cowry card used across LAMATA services.
-const PAYS_BY_CARD = new Set(["brt", "rail", "ferry"]);
-
 const LANGUAGE_STYLE: Record<LangCode, string> = {
   en: "clear, friendly Nigerian English",
   pcm:
@@ -92,108 +67,6 @@ const LANGUAGE_STYLE: Record<LangCode, string> = {
   ig: LANGUAGE_NAMES.ig,
   ha: LANGUAGE_NAMES.ha,
 };
-
-// ---------------------------------------------------------------------------
-// The composed answer
-// ---------------------------------------------------------------------------
-
-const mid = (r: [number, number]) => (r[0] + r[1]) / 2;
-const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-function legSentence(leg: TripLeg, i: number): string {
-  const line = leg.line && leg.mode !== "danfo" ? ` (${leg.line})` : "";
-  return (
-    `${i + 1}. Take ${TAKE_VEHICLE[leg.mode] ?? leg.mode}${line} from ${leg.board}. ` +
-    `Get off at ${leg.alight}. ` +
-    `Fare: ${formatNaira(leg.fare)}${leg.estimated ? " (estimate)" : ""}` +
-    (leg.duration ? `, about ${formatMinutes(leg.duration)}` : "") +
-    "."
-  );
-}
-
-function paymentSentence(it: Itinerary): string {
-  const kinds = (card: boolean) =>
-    Array.from(
-      new Set(
-        it.legs
-          .filter((l) => PAYS_BY_CARD.has(l.mode) === card)
-          .map((l) => VEHICLE_SHORT[l.mode] ?? l.mode)
-      )
-    );
-  const parts: string[] = [];
-  const cash = kinds(false);
-  const card = kinds(true);
-  if (cash.length) parts.push(`pay cash on the ${cash.join(" and ")} (exact change helps)`);
-  if (card.length) parts.push(`use a Cowry card on the ${card.join(" and ")} (buy or top up at the terminal)`);
-  return `How to pay: ${parts.join("; ")}.`;
-}
-
-/** "It is cheaper and takes about as long." — computed, never guessed. */
-function comparison(alt: Itinerary, best: Itinerary): string {
-  const cost = mid(alt.fare) - mid(best.fare);
-  const time = alt.duration && best.duration ? mid(alt.duration) - mid(best.duration) : 0;
-  const money = cost < -50 ? "is cheaper" : cost > 50 ? "costs more" : "costs about the same";
-  const speed = time < -5 ? "is faster" : time > 5 ? "is slower" : "takes about as long";
-  return `It ${money} and ${speed}.`;
-}
-
-function alternativeSentence(alt: Itinerary, best: Itinerary): string {
-  const legs = alt.legs
-    .map((l, i) => `${i === 0 ? "" : "then "}${VEHICLE_SHORT[l.mode] ?? l.mode} to ${l.to}`)
-    .join(", ");
-  return (
-    `Other option: ${capitalise(legs)} — ${formatNaira(alt.fare)}` +
-    (alt.duration ? `, about ${formatMinutes(alt.duration)}` : "") +
-    `. Board the first one at ${alt.legs[0].board.split(" — ")[0]}. ${comparison(alt, best)}`
-  );
-}
-
-/** Practical notes from the route data, minus what the answer already covers. */
-function tipsFor(it: Itinerary): string[] {
-  const tips: string[] = [];
-  for (const leg of it.legs) {
-    for (const sentence of (leg.notes ?? "").split(/(?<=\.)\s+/)) {
-      const s = sentence.trim();
-      if (!s || /fare|₦|cowry card/i.test(s) || tips.includes(s)) continue;
-      tips.push(/[.!?]$/.test(s) ? s : `${s}.`);
-    }
-  }
-  return tips.slice(0, 3);
-}
-
-/**
- * The full, detailed reply for a planned trip, in English: summary, one
- * numbered step per vehicle (boarding point, drop-off, fare, time), how to
- * pay, the best alternative with a computed comparison, and tips.
- */
-export function composeAnswer(plan: TripPlan): string | null {
-  const best = plan.best;
-  if (!best) return null;
-
-  const vehicles = best.legs.length === 1 ? "1 vehicle" : `${best.legs.length} vehicles`;
-  const lines = [
-    `From ${best.from} to ${best.to}: ${vehicles}, ${formatNaira(best.fare)} in total` +
-      (best.duration ? `, about ${formatMinutes(best.duration)}` : "") +
-      ".",
-  ];
-  if (plan.originSource === "location") {
-    lines.push(`Starting from ${best.from}, the stop nearest to you.`);
-  }
-  for (const s of plan.substitutions) {
-    lines.push(`${s.requested} isn't on a mapped route, so the trip uses ${s.used} (about ${s.km} km away — a short keke ride).`);
-  }
-
-  lines.push("", ...best.legs.map(legSentence), "", paymentSentence(best));
-
-  const alt = plan.alternatives[0];
-  if (alt) lines.push("", alternativeSentence(alt, best));
-
-  lines.push(
-    "",
-    `Tips: ${[...tipsFor(best), "Fares change often, so treat these prices as estimates."].join(" ")}`
-  );
-  return lines.join("\n");
-}
 
 /**
  * The 7B model sometimes loops, drops steps or invents prices, so its reply is
@@ -234,10 +107,6 @@ export function replyKeepsFacts(
   return true;
 }
 
-// ---------------------------------------------------------------------------
-// The prompt
-// ---------------------------------------------------------------------------
-
 function routeLine(r: KBRoute): string {
   return (
     `- ${r.from} ↔ ${r.to}: ${VEHICLE_NAME[r.mode] ?? r.mode}` +
@@ -258,7 +127,7 @@ export function buildSystemPrompt(
     "You are DanfoAI, an expert Lagos transit guide. You help people travel across " +
     "Lagos, Nigeria by danfo, BRT, train, ferry and keke.";
 
-  const answer = composeAnswer(plan);
+  const answer = composeAnswer(plan, "en");
   if (answer) {
     const task =
       language === "en"

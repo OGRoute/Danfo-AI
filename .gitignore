@@ -28,3 +28,5 @@ yarngpt-service/models/
 
 # Clerk keyless-mode dev keys
 .clerk/
+.vercel
+.env*

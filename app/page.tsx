@@ -325,7 +325,11 @@ export default function Home() {
             <div key={i} className={`bubble ${m.role}`}>
               <div className="content">{m.content}</div>
               {m.role === "assistant" && m.plan?.best && (
-                <TripCard plan={m.plan} onShowMap={() => openMap(m.plan ?? null)} />
+                <TripCard
+                  plan={m.plan}
+                  language={m.language}
+                  onShowMap={() => openMap(m.plan ?? null)}
+                />
               )}
               {m.role === "assistant" && m.note && <div className="replynote">{m.note}</div>}
               {m.role === "assistant" && (

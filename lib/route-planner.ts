@@ -28,6 +28,8 @@ export interface TripLeg {
   board: string;
   /** Where to get off. */
   alight: string;
+  /** The line's final stop, when boarding part-way along it ("the one heading to Ajah"). */
+  towards?: string;
   /** Ordered stops travelled through, from → to (drawn on the map). */
   path: string[];
   /** True when the fare is pro-rated for part of a line rather than published. */
@@ -260,10 +262,10 @@ function legFromEdge(e: Edge): TripLeg {
   const boardHere = e.reverse ? r.boardReverse : r.board;
   const boardAtEnd = e.reverse ? r.board : r.boardReverse;
 
-  const board =
-    e.from === lineStart && boardHere
-      ? boardHere
-      : `${e.from} ${place} — take the ${VEHICLE[r.mode] ?? r.mode} heading to ${lineEnd}`;
+  const atNamedStart = e.from === lineStart && !!boardHere;
+  const board = atNamedStart
+    ? boardHere!
+    : `${e.from} ${place} — take the ${VEHICLE[r.mode] ?? r.mode} heading to ${lineEnd}`;
   // The terminal you arrive at is where the opposite direction boards.
   const alight = e.to === lineEnd && boardAtEnd ? firstClause(boardAtEnd) : `${e.to} ${place}`;
 
@@ -276,6 +278,7 @@ function legFromEdge(e: Edge): TripLeg {
     duration: e.duration,
     board,
     alight,
+    towards: atNamedStart ? undefined : lineEnd,
     path: e.path,
     estimated: e.estimated,
     notes: r.notes,

@@ -5,6 +5,19 @@
 ===============================================================================
 
 -------------------------------------------------------------------------------
+ FIXED — replies in the rider's language (2026-09-15)
+-------------------------------------------------------------------------------
+
+  - Trip answers asked in Yoruba, Igbo, Hausa or Pidgin (typed, spoken, or
+    picked in the language menu) are now written in that language instead of
+    English. lib/compose-answer.ts builds the full answer — summary, steps,
+    how to pay, alternative, tips — from sentence templates per language; place
+    names, boarding points and ₦ amounts stay exactly as in the route data.
+    The 0G model only rephrases English trip answers (MODEL_REPLY_LANGUAGES).
+  - Trip card labels follow the reply language; legs boarded part-way along a
+    line say which direction to catch.
+
+-------------------------------------------------------------------------------
  FIXED — found while testing the running app (2026-09-15)
 -------------------------------------------------------------------------------
 
