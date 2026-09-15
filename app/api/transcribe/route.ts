@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { Agent, fetch as undiciFetch, FormData as UndiciFormData } from "undici";
 import { transcribe } from "../../../lib/zg-speech";
 import { isIntronConfigured, transcribeWithIntron } from "../../../lib/intron-speech";
+import { detectLanguage, isLangCode, type LangCode } from "../../../lib/language-detect";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-// Local Whisper STT service (defaults to the same box as YarnGPT). When set, it
-// is the primary engine — Whisper auto-detects language incl. Nigerian ones.
+// Local Whisper STT service (defaults to the same box as YarnGPT).
 const STT_BASE = (
   process.env.STT_API_URL ||
   process.env.YARNGPT_API_URL ||
@@ -20,16 +20,27 @@ const sttAgent = new Agent({
   bodyTimeout: STT_TIMEOUT_MS,
 });
 
-// Set STT_PREFER_INTRON=1 to make Intron the primary STT engine (best accuracy
-// for Nigerian languages) once your Intron account is provisioned. Whisper then
-// acts as the fallback. Default: local Whisper first.
-const PREFER_INTRON = process.env.STT_PREFER_INTRON === "1";
+let localHealth: { ok: boolean; at: number } | null = null;
+
+/** Is the local Whisper service actually running? (cached for 30 s) */
+async function localSttHealthy(): Promise<boolean> {
+  if (!STT_BASE) return false;
+  if (localHealth && Date.now() - localHealth.at < 30_000) return localHealth.ok;
+  let ok = false;
+  try {
+    ok = (await fetch(`${STT_BASE}/health`, { signal: AbortSignal.timeout(1500) })).ok;
+  } catch {
+    ok = false;
+  }
+  localHealth = { ok, at: Date.now() };
+  return ok;
+}
 
 async function transcribeLocal(
   buf: Buffer,
   filename: string,
   language?: string
-): Promise<string> {
+): Promise<{ text: string; language?: string }> {
   // Use undici's own FormData so it serializes as proper multipart for fetch.
   const fd = new UndiciFormData();
   fd.append("file", new Blob([new Uint8Array(buf)]), filename);
@@ -43,43 +54,75 @@ async function transcribeLocal(
     throw new Error(`local STT ${res.status}: ${await res.text().catch(() => "")}`);
   }
   const data: any = await res.json();
-  return (data?.text || "").trim();
+  return { text: (data?.text || "").trim(), language: data?.language };
 }
 
+/** Whisper never reports Pidgin — read the words to tell Pidgin from English. */
+function languageOf(text: string, reported?: string): LangCode {
+  if (isLangCode(reported) && reported !== "en") return reported;
+  return detectLanguage(text).code;
+}
+
+/**
+ * Which speech engines are usable right now. The client uses this to decide
+ * between server transcription (Intron / Whisper) and the browser recogniser.
+ */
+export async function GET() {
+  return NextResponse.json({ intron: isIntronConfigured(), local: await localSttHealthy() });
+}
+
+/**
+ * POST multipart { file, language? } → { text, language, lock, engine }.
+ *  - language: yo | ig | ha | en | pcm, or empty for auto-detect.
+ *  - lock: the language the client should send with the rest of this
+ *    recording session, so auto-detect only costs extra on the first phrase.
+ */
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
     const file = form.get("file") as File | null;
     if (!file) return NextResponse.json({ error: "no file" }, { status: 400 });
-    const language = (form.get("language") as string | null) || undefined;
+    const requested = (form.get("language") as string | null) || "";
+    const language = isLangCode(requested) ? requested : undefined; // undefined = auto
     const buf = Buffer.from(await file.arrayBuffer());
     const filename = file.name || "audio.webm";
 
-    // Build the engine order. Intron first only when explicitly preferred.
-    const local = {
-      name: "whisper-local",
-      enabled: !!STT_BASE,
-      run: () => transcribeLocal(buf, filename, language),
-    };
-    const intron = {
-      name: "intron",
-      enabled: isIntronConfigured(),
-      run: () => transcribeWithIntron(buf, filename, language),
-    };
-    const zerog = {
-      name: "0g-whisper",
-      enabled: true,
-      run: () => transcribe(buf, filename, language),
-    };
-    const engines = (
-      PREFER_INTRON ? [intron, local, zerog] : [local, intron, zerog]
-    ).filter((e) => e.enabled);
+    // Intron first: it's the engine that genuinely understands Pidgin, Yoruba,
+    // Igbo and Hausa. Whisper (local, then 0G) is the fallback.
+    const engines = [
+      {
+        name: "intron",
+        enabled: isIntronConfigured(),
+        run: async () => {
+          const r = await transcribeWithIntron(buf, filename, language);
+          // The Pidgin-English model handles English too, so lock onto it
+          // rather than plain English to keep Pidgin phrases recognisable.
+          return { ...r, lock: language ?? (r.language === "en" ? "pcm" : r.language) };
+        },
+      },
+      {
+        name: "whisper-local",
+        enabled: !!STT_BASE,
+        run: async () => {
+          const r = await transcribeLocal(buf, filename, language);
+          return { text: r.text, language: language ?? languageOf(r.text, r.language), lock: language ?? "" };
+        },
+      },
+      {
+        name: "0g-whisper",
+        enabled: true,
+        run: async () => {
+          const text = (await transcribe(buf, filename, language)).trim();
+          return { text, language: language ?? languageOf(text), lock: language ?? "" };
+        },
+      },
+    ].filter((e) => e.enabled);
 
     const errors: string[] = [];
     for (const eng of engines) {
       try {
-        const text = await eng.run();
-        return NextResponse.json({ text, engine: eng.name });
+        const result = await eng.run();
+        return NextResponse.json({ ...result, engine: eng.name });
       } catch (e) {
         const msg = (e as Error).message || "";
         console.error(`/api/transcribe ${eng.name} failed:`, msg);
@@ -90,13 +133,13 @@ export async function POST(req: NextRequest) {
     // Every engine failed — return the most actionable guidance we can.
     const joined = errors.join(" | ");
     let hint =
-      "Voice input isn't available right now. Make sure the local speech service " +
-      "is running (yarngpt-service on port 8000), or configure another STT engine. " +
+      "Voice input isn't available right now. Add INTRON_API_KEY for Nigerian-language " +
+      "speech recognition, or start the local speech service (yarngpt-service on port 8000). " +
       "You can type your message meanwhile.";
-    if (!STT_BASE && /integrator|permission denied|\b403\b/i.test(joined)) {
+    if (isIntronConfigured() && /integrator|permission denied|\b40[13]\b/i.test(joined)) {
       hint =
-        "Intron account isn't approved for API access yet (needs an 'integrator " +
-        "account'). Email voice@intron.io, or start the local Whisper service.";
+        "The Intron key was rejected — check INTRON_API_KEY and that the account is approved " +
+        "for API access (voice@intron.io).";
     }
     return NextResponse.json({ error: hint }, { status: 503 });
   } catch (e) {

@@ -1,8 +1,71 @@
 ===============================================================================
  DanfoAI — Changelog
- Branch: upgrade-r17
- Date:   2026-09-09
+ Branch: upgrade-r18
+ Date:   2026-09-14
 ===============================================================================
+
+-------------------------------------------------------------------------------
+ FIXED — Voice input
+-------------------------------------------------------------------------------
+
+  - Listening no longer stops at the first pause. Recording continues until
+    the rider taps stop, goes quiet for 30 s, or hits 5 minutes. Server engines
+    get the audio phrase by phrase (split on pauses) so text appears while the
+    rider is still talking; the browser recogniser is restarted automatically
+    after its own short time-outs and shows live interim text.
+  - Auto-detect now identifies Nigerian languages. The first phrase is
+    transcribed by Intron's Pidgin, Yoruba, Igbo and Hausa models in parallel
+    and the transcript that reads most like its own language wins
+    (lib/language-detect.ts); the rest of the recording reuses that language.
+  - Pidgin is sent to Intron's Pidgin-English model (pcm). The Intron widget
+    and the browser recogniser can't be told to expect Pidgin, which is why it
+    was failing; the widget is now opt-in (NEXT_PUBLIC_INTRON_WIDGET=1).
+  - Needs INTRON_API_KEY. Without it the app says so and uses English.
+
+-------------------------------------------------------------------------------
+ ADDED
+-------------------------------------------------------------------------------
+
+  - Intron text-to-speech (/api/speak): native Yoruba, Igbo, Hausa, Pidgin
+    and Nigerian-accented English voices, cached in memory; falls back to the
+    browser voice, then YarnGPT.
+  - Trip planner (lib/route-planner.ts): computes legs, boarding points,
+    drop-offs, fares and times from the route database, including boarding
+    mid-line, rail/ferry waits, up to two alternatives, and starting from the
+    rider's GPS position. The model explains the plan instead of guessing, and
+    a trip card under each reply shows the same numbers.
+  - Reply guard: the chat model only rephrases the computed answer (English
+    and Pidgin). A reply that drops a stop or fare, invents a price or loops
+    is replaced by the computed answer. Trips asked in Yoruba, Igbo or Hausa
+    are answered with the exact plan in English, because the only testnet
+    chat model garbles those languages (MODEL_REPLY_LANGUAGES to change).
+  - Route database v2: 46 routes / 43 stops — LAMATA BRT corridors, Blue Line
+    and Red Line rail, Ikorodu ferry and major danfo routes, with 2026 fares,
+    journey times, boarding points and aliases in all five languages.
+  - Live map: routes drawn on real roads (OSRM via /api/directions), live GPS
+    dot with heading and accuracy, follow mode, step-by-step progress, next
+    stop and ETA, route options, dark map tiles, and a "Simulate trip" demo.
+  - Theme picker with Light, Dark and System (follows the OS live).
+  - Clerk sign-in embedded on the landing screen (Google, email, …) with a
+    UserButton in the header. Runs in Clerk keyless mode during development,
+    so it works before you create Clerk keys.
+  - Message box is an auto-growing textarea (Enter sends, Shift+Enter adds a
+    line).
+
+-------------------------------------------------------------------------------
+ FIXED — 0G Compute funding (correction to r17)
+-------------------------------------------------------------------------------
+
+  - r17 read balances with broker.ledger.getLedgerWithDetail(), which doesn't
+    exist in @0glabs/0g-serving-broker 0.6.5. The read always failed, so every
+    server restart deposited and transferred another ~0.55 0G. Balances are
+    now read with inference.getAccount() / ledger.getLedger().
+  - The SDK's own auto top-up (it targets 2,000,000 × token price ≈ 8.8 0G for
+    the testnet chat model) is switched off; the app tops the sub-account up
+    to 0.5 0G when it falls below 0.2 0G (contract minimum is 0.1 0G).
+  - 0G Whisper now shares the funded broker and calls processResponse().
+  - Replies use up to 900 tokens at temperature 0.3, and only the relevant
+    routes are sent in the prompt.
 
 -------------------------------------------------------------------------------
  CHANGED — 0G Compute cost: ~1.1 0G → under 0.6 0G per provider

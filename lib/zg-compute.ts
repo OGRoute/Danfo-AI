@@ -14,103 +14,123 @@
 import { createZGComputeNetworkBroker } from "@0glabs/0g-serving-broker";
 import { getWallet } from "./zg-provider";
 
-// Cache the broker across requests (init is expensive).
-let brokerPromise: ReturnType<typeof createZGComputeNetworkBroker> | null = null;
-let acknowledged = false;
+type Broker = Awaited<ReturnType<typeof createZGComputeNetworkBroker>>;
 
-async function getBroker() {
+// Cache the broker across requests (init is expensive).
+let brokerPromise: Promise<Broker> | null = null;
+const acknowledgedProviders = new Set<string>();
+
+/** Shared, cost-capped broker for every 0G Compute call (chat + speech). */
+export async function getComputeBroker(): Promise<Broker> {
   if (!brokerPromise) {
-    brokerPromise = createZGComputeNetworkBroker(getWallet());
+    brokerPromise = createZGComputeNetworkBroker(getWallet()).then((broker) => {
+      capAutoTopUp(broker);
+      return broker;
+    });
   }
   return brokerPromise;
 }
 
 // 0G Compute locks funds in a PER-PROVIDER sub-account. Funds flow:
-// wallet --deposit--> main account --transferFund--> provider sub-account.
+// wallet --deposit--> main ledger --transferFund--> provider sub-account.
 //
-// Cost control: the 0G SDK auto-transfers a full 1 0G whenever the provider's
-// sub-account doesn't exist yet or is completely empty (minTransferAmount /
-// minTargetThreshold inside @0glabs/0g-serving-broker). By pre-funding the
-// sub-account ourselves BEFORE the first acknowledge/inference call, that
-// 1 0G auto-transfer never triggers — requests only need the balance to stay
-// above a tiny per-token trigger threshold, so 0.5 0G comfortably covers
-// thousands of requests. We top up to a small buffer above the minimum so
-// request fees don't drain the sub-account back to zero (which would re-arm
-// the SDK's 1 0G auto top-up).
-const MIN_BALANCE_OG = Number(process.env.COMPUTE_MIN_BALANCE_OG || 0.5);
-// Fund to a small buffer above the minimum to keep total spend under ~0.6 0G.
-const TARGET_BALANCE_OG = Number(
-  process.env.COMPUTE_TARGET_BALANCE_OG || Math.max(MIN_BALANCE_OG + 0.05, 0.55)
+// The contract itself only needs a small balance (LedgerManager on Galileo
+// testnet: MIN_ACCOUNT_BALANCE 0.1 0G, MIN_TRANSFER_AMOUNT 0.01 0G). What costs
+// money is the SDK's own automation, which would:
+//   - transfer 1 0G whenever a provider sub-account doesn't exist yet, and
+//   - inside getRequestHeaders(), try to keep the sub-account topped up to
+//     2,000,000 × (input + output price per token) — about 8.8 0G for the
+//     current testnet chatbot — whenever it holds less than half of that.
+// So we create and fund the sub-account ourselves with a small balance, turn
+// the SDK's automatic top-up off (capAutoTopUp), and re-check the balance
+// periodically, topping it back up in small steps when it runs low.
+const MIN_BALANCE_OG = Number(process.env.COMPUTE_MIN_BALANCE_OG || 0.2);
+const TARGET_BALANCE_OG = Math.max(
+  Number(process.env.COMPUTE_TARGET_BALANCE_OG || 0.5),
+  MIN_BALANCE_OG + 0.05
 );
-// Cap the response length to reduce 0G Compute token spend per request.
-const MAX_TOKENS = Number(process.env.COMPUTE_MAX_TOKENS || 512);
+// Room for a detailed, step-by-step route answer (≈0.003 0G of output at
+// current testnet prices).
+const MAX_TOKENS = Number(process.env.COMPUTE_MAX_TOKENS || 900);
+// How often to re-read the sub-account balance while requests keep flowing.
+const BALANCE_RECHECK_MS = 10 * 60_000;
 
 const ogToNeuron = (og: number) => BigInt(Math.round(og * 1e18)); // 1 0G = 1e18 neuron
 const neuronToOg = (n: bigint) => Number(n) / 1e18;
 
-// Providers we've already funded this process (avoid redundant on-chain txs).
-const fundedProviders = new Set<string>();
+/**
+ * Disable the SDK's automatic sub-account top-up. The thresholds are plain
+ * fields on the broker's request processor; with both at zero the SDK never
+ * moves funds for an existing account, leaving funding to ensureProviderFunded.
+ */
+function capAutoTopUp(broker: Broker) {
+  const processor = (broker.inference as any)?.requestProcessor;
+  if (processor && "topUpTriggerThreshold" in processor && "topUpTargetThreshold" in processor) {
+    processor.topUpTriggerThreshold = 0n;
+    processor.topUpTargetThreshold = 0n;
+  } else {
+    console.warn(
+      "0G broker internals changed: couldn't disable the SDK's automatic sub-account " +
+        "top-up, so it may lock more 0G than COMPUTE_TARGET_BALANCE_OG."
+    );
+  }
+}
+
+// When each provider's balance was last confirmed healthy.
+const balanceCheckedAt = new Map<string, number>();
 
 /**
  * Make sure the provider's sub-account holds at least MIN_BALANCE_OG, creating
- * the main ledger and moving funds through it as needed. Idempotent: once the
- * sub-account meets the minimum this is a no-op (reads balance and returns).
+ * the main ledger and moving funds through it as needed. Cheap when healthy:
+ * one balance read every BALANCE_RECHECK_MS.
  */
-async function ensureProviderFunded(broker: any, provider: string) {
-  if (fundedProviders.has(provider.toLowerCase())) return;
+async function ensureProviderFunded(broker: Broker, provider: string) {
+  const key = provider.toLowerCase();
+  const checked = balanceCheckedAt.get(key);
+  if (checked && Date.now() - checked < BALANCE_RECHECK_MS) return;
 
   const MIN = ogToNeuron(MIN_BALANCE_OG);
   const TARGET = ogToNeuron(TARGET_BALANCE_OG);
 
-  let ledgerExists = false;
-  let available = 0n; // main-account funds free to transfer to sub-accounts
-  let subBalance = 0n; // this provider's locked balance
+  // Funds locked for this provider; a sub-account that doesn't exist reads as 0.
+  let subBalance = 0n;
   try {
-    const detail = await broker.ledger.getLedgerWithDetail();
-    ledgerExists = true;
-    // ledgerInfo = [total, locked, available]; infers = [provider, balance, ...][]
-    available = BigInt(detail.ledgerInfo?.[2] ?? 0);
-    const sub = (detail.infers ?? []).find(
-      (i: any[]) => String(i[0]).toLowerCase() === provider.toLowerCase()
-    );
-    if (sub) subBalance = BigInt(sub[1]);
+    const account = await broker.inference.getAccount(provider);
+    subBalance = BigInt(account.balance) - BigInt(account.pendingRefund);
   } catch {
-    ledgerExists = false; // no ledger yet
+    subBalance = 0n;
   }
 
   if (subBalance >= MIN) {
-    fundedProviders.add(provider.toLowerCase());
+    balanceCheckedAt.set(key, Date.now());
     return;
   }
 
-  const subShortfall = TARGET - subBalance; // > 0 here
-
+  const shortfall = TARGET - subBalance; // > 0 here
   try {
-    // Ensure the main account can cover the transfer. If we couldn't read the
-    // ledger detail, assume nothing is available and fund the full shortfall.
-    if (!ledgerExists || available < subShortfall) {
-      const depositOg =
-        neuronToOg(subShortfall - (ledgerExists ? available : 0n)) + 0.005;
-      // Create the ledger on first use; if it already exists, top it up instead.
-      try {
-        await broker.ledger.addLedger(depositOg);
-      } catch (e) {
-        if (/already exist/i.test((e as Error).message || "")) {
-          await broker.ledger.depositFund(depositOg);
-        } else {
-          throw e;
-        }
-      }
+    let available: bigint | null = null; // null = no main ledger yet
+    try {
+      const ledger = await broker.ledger.getLedger();
+      available = BigInt(ledger.availableBalance);
+    } catch {
+      available = null;
     }
-    // Lock the shortfall into the provider sub-account.
-    await broker.ledger.transferFund(provider, "inference", subShortfall);
-    fundedProviders.add(provider.toLowerCase());
+
+    // Deposit only what the transfer needs (plus a little dust for rounding).
+    if (available === null) {
+      await broker.ledger.addLedger(neuronToOg(shortfall) + 0.005);
+    } else if (available < shortfall) {
+      await broker.ledger.depositFund(neuronToOg(shortfall - available) + 0.005);
+    }
+
+    await broker.ledger.transferFund(provider, "inference", shortfall);
+    balanceCheckedAt.set(key, Date.now());
   } catch (e) {
     throw new Error(
-      `Could not fund the 0G Compute sub-account for provider ${provider} to the ` +
-        `required ${MIN_BALANCE_OG} 0G (currently ~${neuronToOg(subBalance).toFixed(3)} 0G). ` +
+      `Could not fund the 0G Compute sub-account for provider ${provider} to ` +
+        `${TARGET_BALANCE_OG} 0G (currently ~${neuronToOg(subBalance).toFixed(3)} 0G). ` +
         `Make sure the wallet holds enough testnet 0G (get some from the 0G faucet), or ` +
-        `pre-fund manually: 0g-compute-cli deposit --amount 2 && 0g-compute-cli ` +
+        `pre-fund manually: 0g-compute-cli deposit --amount 1 && 0g-compute-cli ` +
         `transfer-fund --provider ${provider} --amount ${TARGET_BALANCE_OG}. ` +
         `Underlying error: ${(e as Error).message}`
     );
@@ -118,23 +138,24 @@ async function ensureProviderFunded(broker: any, provider: string) {
 }
 
 /**
- * Ensure the provider sub-account is funded to the network minimum and the
- * provider is acknowledged. Call once before the first inference.
+ * Ensure the provider sub-account is funded and the provider is acknowledged.
+ * Funding MUST come first: acknowledging a provider with no sub-account makes
+ * the SDK transfer a full 1 0G on its own.
  */
 export async function ensureComputeReady(providerAddress: string) {
-  const broker = await getBroker();
+  const broker = await getComputeBroker();
 
   await ensureProviderFunded(broker, providerAddress);
 
-  // Acknowledge the provider (only needs to happen once per provider).
-  if (!acknowledged) {
+  const key = providerAddress.toLowerCase();
+  if (!acknowledgedProviders.has(key)) {
     try {
       await broker.inference.acknowledgeProviderSigner(providerAddress);
     } catch (e) {
       // If it's already acknowledged the broker reverts; treat as fine.
       console.warn("acknowledge note:", (e as Error).message);
     }
-    acknowledged = true;
+    acknowledgedProviders.add(key);
   }
 }
 
@@ -152,9 +173,10 @@ export interface DanfoChatResult {
  */
 export async function danfoChat(
   providerAddress: string,
-  messages: { role: string; content: string }[]
+  messages: { role: string; content: string }[],
+  options: { temperature?: number } = {}
 ): Promise<DanfoChatResult> {
-  const broker = await getBroker();
+  const broker = await getComputeBroker();
 
   await ensureComputeReady(providerAddress);
 
@@ -166,23 +188,41 @@ export async function danfoChat(
   // use the last user message.
   const lastUser =
     [...messages].reverse().find((m) => m.role === "user")?.content || "";
-  const headers = await broker.inference.getRequestHeaders(
-    providerAddress,
-    lastUser
-  );
 
-  const res = await fetch(`${endpoint}/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
-    body: JSON.stringify({ model, messages, max_tokens: MAX_TOKENS }),
-  });
+  const send = async () => {
+    // Request headers are single-use, so build fresh ones for every attempt.
+    const headers = await broker.inference.getRequestHeaders(providerAddress, lastUser);
+    return fetch(`${endpoint}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: MAX_TOKENS,
+        // Low temperature: stick to the computed trip plan instead of improvising.
+        temperature: options.temperature ?? 0.3,
+      }),
+    });
+  };
 
+  let res = await send();
   if (!res.ok) {
-    throw new Error(`0G Compute request failed: ${res.status} ${await res.text()}`);
+    const detail = await res.text();
+    // The balance is only re-read every few minutes; if the provider says it
+    // ran out in between, top up once and retry.
+    if (!/insufficient|balance/i.test(detail)) {
+      throw new Error(`0G Compute request failed: ${res.status} ${detail}`);
+    }
+    balanceCheckedAt.delete(providerAddress.toLowerCase());
+    await ensureProviderFunded(broker, providerAddress);
+    res = await send();
+    if (!res.ok) {
+      throw new Error(`0G Compute request failed: ${res.status} ${await res.text()}`);
+    }
   }
 
   // ChatID: header first, body fallback (per 0G critical rules).
-  const headerChatId = res.headers.get("ZG-Res-Key");
+  const headerChatId = res.headers.get("ZG-Res-Key") || res.headers.get("zg-res-key");
   const data = await res.json();
   const bodyChatId = data.id || null;
   const chatId = headerChatId || bodyChatId;
@@ -190,7 +230,7 @@ export async function danfoChat(
   const reply: string = data.choices?.[0]?.message?.content ?? "";
 
   // Verify the response. processResponse confirms the provider's signature
-  // over the output (TEE-backed). If it returns true, the answer is verified.
+  // over the output (TEE-backed) and settles the fee from the usage data.
   let verified = false;
   try {
     if (chatId) {
@@ -198,7 +238,7 @@ export async function danfoChat(
         await broker.inference.processResponse(
           providerAddress,
           chatId,
-          data.usage
+          JSON.stringify(data.usage ?? {})
         )
       );
     }
@@ -214,11 +254,11 @@ export async function discoverProvider(): Promise<string> {
   const explicit = process.env.PROVIDER_ADDRESS;
   if (explicit) return explicit;
 
-  const broker = await getBroker();
+  const broker = await getComputeBroker();
   const services = await broker.inference.listService();
-  // Prefer TEE-verifiable providers.
-  const tee = services.find((s: any) => s.verifiability === "TeeML");
-  const chosen = tee || services[0];
-  if (!chosen) throw new Error("No 0G Compute providers available");
+  // Prefer TEE-verifiable chat providers.
+  const chat = services.filter((s: any) => !s.serviceType || s.serviceType === "chatbot");
+  const chosen = chat.find((s: any) => s.verifiability === "TeeML") || chat[0];
+  if (!chosen) throw new Error("No 0G Compute chat providers available");
   return chosen.provider;
 }

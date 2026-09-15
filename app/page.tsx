@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
+import { UserButton } from "@clerk/nextjs";
 import { FlipWords } from "./flipword";
 import ThemeToggle from "../components/ThemeToggle";
 import TransitBackground from "../components/TransitBackground";
@@ -8,8 +9,11 @@ import AuthGate from "../components/AuthGate";
 import NotificationBell from "../components/NotificationBell";
 import HistoryDrawer from "../components/HistoryDrawer";
 import MapPanel from "../components/MapPanel";
+import TripCard from "../components/TripCard";
 import IntronVoiceInput from "../components/IntronVoiceInput";
-import { findStopsInText } from "../lib/lagos-stops";
+import { findStopsInText, type LatLng } from "../lib/lagos-stops";
+import { LANGUAGE_NAMES, type LangCode } from "../lib/language-detect";
+import type { TripPlan } from "../lib/route-planner";
 import { useVoiceRecorder } from "../lib/useVoiceRecorder";
 import { useTextToSpeech } from "../lib/useTextToSpeech";
 import { useAuth } from "../lib/useAuth";
@@ -23,12 +27,12 @@ const SAMPLES = [
   "Mo fẹ lọ si Oshodi lati CMS",
   "Kedu ka m ga-esi gaa Ikeja site na Yaba?",
   "Ina son zuwa Lekki daga Obalende",
-  "How much from Ikorodu to TBS?",
+  "Abeg, how I go reach Ikeja from Ikorodu?",
 ];
 
 /**
- * Languages offered for voice input. `code` is the ASR hint sent to the
- * transcription API (Intron / 0G Whisper). Pidgin (pcm) is supported by Intron.
+ * Languages offered for voice input. `code` is the ASR language sent to the
+ * transcription API; "Auto-detect" lets Intron identify it from the speech.
  */
 const LANGUAGES: { code: string; label: string }[] = [
   { code: "", label: "Auto-detect" },
@@ -39,8 +43,15 @@ const LANGUAGES: { code: string; label: string }[] = [
   { code: "pcm", label: "Pidgin" },
 ];
 
+// The message box grows with its text up to this height, then scrolls.
+const INPUT_MAX_HEIGHT = 168;
+
+// Optional Intron embeddable widget (no language control — see .env.example).
+const INTRON_WIDGET_KEY =
+  process.env.NEXT_PUBLIC_INTRON_WIDGET === "1" ? process.env.NEXT_PUBLIC_INTRON_API_KEY || "" : "";
+
 export default function Home() {
-  const { status, identityKey, displayName, signOut } = useAuth();
+  const { status, method, identityKey, displayName, signOut } = useAuth();
 
   // Identity scope for history + notifications (null = anonymous / ephemeral).
   const history = useChatHistory(identityKey);
@@ -48,15 +59,27 @@ export default function Home() {
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
+  const [interim, setInterim] = useState("");
   const [loading, setLoading] = useState(false);
   const [kbSource, setKbSource] = useState<string>("");
   const [lang, setLang] = useState<string>("");
+  const [voiceLang, setVoiceLang] = useState<LangCode | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const [mapPlan, setMapPlan] = useState<TripPlan | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Latest GPS fix from the live map, so "take me to Ikeja" can start from here.
+  const positionRef = useRef<LatLng | null>(null);
 
-  // Stops mentioned in the latest exchange, to highlight on the map.
-  const detectedRoute = useMemo(() => {
+  // The most recent computed trip, for the header map button.
+  const latestPlan = useMemo(
+    () => [...messages].reverse().find((m) => m.role === "assistant" && m.plan?.best)?.plan ?? null,
+    [messages]
+  );
+
+  // Stops mentioned in the latest exchange, shown on the map when no trip was computed.
+  const detectedStops = useMemo(() => {
     const rev = [...messages].reverse();
     const lastUser = rev.find((m) => m.role === "user")?.content || "";
     const lastAssistant = rev.find((m) => m.role === "assistant")?.content || "";
@@ -68,60 +91,81 @@ export default function Home() {
     langRef.current = lang;
   }, [lang]);
 
-  const voice = useVoiceRecorder(
-    (text) => setInput((prev) => (prev ? `${prev} ${text}` : text)),
-    () => langRef.current || undefined
-  );
+  const voice = useVoiceRecorder({
+    getLanguage: () => langRef.current,
+    onText: (text) => setInput((prev) => (prev.trim() ? `${prev.trimEnd()} ${text}` : text)),
+    onInterim: setInterim,
+    onLanguage: setVoiceLang,
+  });
   const tts = useTextToSpeech();
-
-  // Intron Sahara streaming STT (client widget). Takes over voice input when a
-  // public Intron key is configured; the mic above then stays hidden and the
-  // widget's own record button streams text straight into the input.
-  const intronKey = process.env.NEXT_PUBLIC_INTRON_API_KEY || "";
-  const intronActive = !!intronKey;
-
-  // Text the rider had typed before an Intron session started, so the streamed
-  // transcript is appended to (not clobbering) it.
-  const intronBaseRef = useRef<string | null>(null);
-  function handleIntronStreaming(text: string) {
-    setInput((prev) => {
-      if (intronBaseRef.current === null) intronBaseRef.current = prev;
-      const base = intronBaseRef.current;
-      return base ? `${base} ${text}` : text;
-    });
-  }
-  function handleIntronFinal(text: string) {
-    setInput((prev) => {
-      const base = intronBaseRef.current;
-      intronBaseRef.current = null;
-      const prefix = base !== null ? base : prev;
-      return prefix ? `${prefix} ${text}` : text;
-    });
-  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
   }, [messages, loading]);
 
+  // Grow the message box with its content, wrapping onto new lines.
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const full = el.scrollHeight;
+    el.style.height = `${Math.min(full, INPUT_MAX_HEIGHT)}px`;
+    el.style.overflowY = full > INPUT_MAX_HEIGHT ? "auto" : "hidden";
+  }, [input]);
+
+  // Text the rider had typed before a widget session started, so the streamed
+  // transcript is appended to (not clobbering) it.
+  const widgetBaseRef = useRef<string | null>(null);
+  function handleWidgetStreaming(text: string) {
+    setInput((prev) => {
+      if (widgetBaseRef.current === null) widgetBaseRef.current = prev;
+      const base = widgetBaseRef.current;
+      return base ? `${base} ${text}` : text;
+    });
+  }
+  function handleWidgetFinal(text: string) {
+    setInput((prev) => {
+      const base = widgetBaseRef.current;
+      widgetBaseRef.current = null;
+      const prefix = base !== null ? base : prev;
+      return prefix ? `${prefix} ${text}` : text;
+    });
+  }
+
   async function send(text: string) {
     const content = text.trim();
     if (!content || loading) return;
+    // Sending ends the recording; late phrases would otherwise refill the box.
+    if (voice.status !== "idle") voice.cancel();
     const next = [...messages, { role: "user" as const, content }];
     setMessages(next);
     setInput("");
+    setInterim("");
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({
+          messages: next.map(({ role, content }) => ({ role, content })),
+          language: lang || voiceLang || undefined,
+          location: positionRef.current ?? undefined,
+        }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setKbSource(data.kbSource || "");
       const final: Msg[] = [
         ...next,
-        { role: "assistant", content: data.reply, verified: data.verified },
+        {
+          role: "assistant",
+          content: data.reply,
+          verified: data.verified,
+          plan: data.plan ?? null,
+          language: data.language,
+          source: data.source,
+          note: data.note,
+        },
       ];
       setMessages(final);
       history.saveMessages(final);
@@ -142,8 +186,17 @@ export default function Home() {
   }
 
   function toggleMic() {
-    if (voice.status === "recording") voice.stop();
-    else voice.start();
+    if (voice.status === "recording") {
+      voice.stop();
+    } else {
+      setVoiceLang(null);
+      voice.start();
+    }
+  }
+
+  function openMap(plan: TripPlan | null) {
+    setMapPlan(plan);
+    setMapOpen(true);
   }
 
   function handleSelectChat(id: string) {
@@ -192,7 +245,11 @@ export default function Home() {
       <MapPanel
         open={mapOpen}
         onClose={() => setMapOpen(false)}
-        route={detectedRoute}
+        plan={mapPlan}
+        stops={detectedStops}
+        onPosition={(pos) => {
+          positionRef.current = pos;
+        }}
       />
 
       <main className="wrap">
@@ -221,16 +278,16 @@ export default function Home() {
           <button
             type="button"
             className="mapbtn"
-            onClick={() => setMapOpen(true)}
+            onClick={() => openMap(latestPlan)}
             aria-label={
-              detectedRoute.length > 1
-                ? `Open route map: ${detectedRoute[0]} to ${detectedRoute[detectedRoute.length - 1]}`
-                : "Open route map"
+              latestPlan?.best
+                ? `Open live map: ${latestPlan.best.from} to ${latestPlan.best.to}`
+                : "Open live map"
             }
-            title="Route map"
+            title="Live map"
           >
             <span aria-hidden>🗺️</span>
-            {detectedRoute.length > 1 && <span className="mapdot" aria-hidden />}
+            {latestPlan?.best && <span className="mapdot" aria-hidden />}
           </button>
 
           <NotificationBell
@@ -239,6 +296,11 @@ export default function Home() {
             onOpen={notif.markAllRead}
             onClear={notif.clearAll}
           />
+          {method === "clerk" && (
+            <div className="userbtn">
+              <UserButton />
+            </div>
+          )}
           <ThemeToggle />
         </header>
 
@@ -262,20 +324,28 @@ export default function Home() {
           {messages.map((m, i) => (
             <div key={i} className={`bubble ${m.role}`}>
               <div className="content">{m.content}</div>
+              {m.role === "assistant" && m.plan?.best && (
+                <TripCard plan={m.plan} onShowMap={() => openMap(m.plan ?? null)} />
+              )}
+              {m.role === "assistant" && m.note && <div className="replynote">{m.note}</div>}
               {m.role === "assistant" && (
                 <div className="meta">
-                  <span className={`verify ${m.verified ? "ok" : "warn"}`}>
-                    {m.verified ? "✓ verified on 0G Compute" : "unverified response"}
+                  <span className={`verify ${m.verified || m.source === "planner" ? "ok" : "warn"}`}>
+                    {m.source === "planner"
+                      ? "✓ computed from route data"
+                      : m.verified
+                        ? "✓ verified on 0G Compute"
+                        : "unverified response"}
                   </span>
                   <button
                     type="button"
                     className={`speak ${tts.playingId === i ? "playing" : ""}`}
-                    onClick={() => tts.speak(i, m.content, lang || "en")}
+                    onClick={() => tts.speak(i, m.content, m.language)}
                     disabled={tts.loadingId === i}
                     aria-label={
                       tts.playingId === i ? "Stop speaking" : "Listen to reply"
                     }
-                    title={tts.playingId === i ? "Stop" : "Listen (YarnGPT)"}
+                    title={tts.playingId === i ? "Stop" : "Listen"}
                   >
                     {tts.loadingId === i ? "…" : tts.playingId === i ? "◼" : "🔊"}
                   </button>
@@ -293,20 +363,44 @@ export default function Home() {
           )}
         </section>
 
-        {voice.unavailable && !intronActive && (
+        {voice.unavailable && !INTRON_WIDGET_KEY && (
           <div className="voicehint" role="status">
             <span aria-hidden>🎙️</span> Voice input isn’t set up yet — type your
             message, or tap the mic to retry.
           </div>
         )}
-        {(tts.error || (!intronActive && !voice.unavailable && voice.error)) && (
+        {voice.notice && !voice.unavailable && !INTRON_WIDGET_KEY && (
+          <div className="voicehint" role="status">
+            <span aria-hidden>🎙️</span> {voice.notice}
+          </div>
+        )}
+        {(tts.error || (!INTRON_WIDGET_KEY && !voice.unavailable && voice.error)) && (
           <div className="micerror" role="alert">
             {tts.error || voice.error}
           </div>
         )}
 
+        {(recording || transcribing) && (
+          <div className="livecaption" aria-live="polite">
+            <span className={`rec ${transcribing ? "busy" : ""}`} aria-hidden />
+            <span className="txt">
+              {transcribing
+                ? "Finishing transcription…"
+                : interim ||
+                  (voice.engine === "browser"
+                    ? "Listening… keep talking, tap ■ when you’re done"
+                    : "Listening… your words appear after each pause")}
+            </span>
+          </div>
+        )}
+        {!lang && voiceLang && !recording && !transcribing && (
+          <div className="langdetected" role="status">
+            Detected language: {LANGUAGE_NAMES[voiceLang]}
+          </div>
+        )}
+
         <footer className="composer">
-          {voice.supported && (
+          {voice.supported && !INTRON_WIDGET_KEY && (
             <select
               className="langpick"
               value={lang}
@@ -323,7 +417,7 @@ export default function Home() {
             </select>
           )}
 
-          {voice.supported && !intronActive && (
+          {voice.supported && !INTRON_WIDGET_KEY && (
             <button
               type="button"
               className={`mic ${recording ? "live" : ""} ${
@@ -345,16 +439,24 @@ export default function Home() {
             </button>
           )}
 
-          <input
+          <textarea
+            ref={inputRef}
+            rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send(input)}
+            onKeyDown={(e) => {
+              // Enter sends; Shift+Enter starts a new line.
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                send(input);
+              }
+            }}
             placeholder={
               recording
-                ? "Listening… tap ■ to stop"
-                : "Type your destination: where you dey go?"
+                ? "Listening… speak naturally, tap ■ when done"
+                : "Where you dey go? e.g. CMS to Ikeja"
             }
-            aria-label="Your destination"
+            aria-label="Your message"
           />
           <button className="go" onClick={() => send(input)} disabled={loading}>
             Go
@@ -368,11 +470,11 @@ export default function Home() {
         )}
       </main>
 
-      {intronActive && (
+      {INTRON_WIDGET_KEY && (
         <IntronVoiceInput
-          apiKey={intronKey}
-          onStreaming={handleIntronStreaming}
-          onFinal={handleIntronFinal}
+          apiKey={INTRON_WIDGET_KEY}
+          onStreaming={handleWidgetStreaming}
+          onFinal={handleWidgetFinal}
         />
       )}
 
@@ -444,6 +546,11 @@ export default function Home() {
           background: var(--verify-ok);
           border: 2px solid var(--header-bg);
         }
+        .userbtn {
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
+        }
         .brandtext {
           flex: 1;
           min-width: 0;
@@ -478,21 +585,6 @@ export default function Home() {
           color: var(--header-subtext);
           margin-top: 3px;
           white-space: nowrap;
-        }
-        .brandtext h1 {
-          margin: 0;
-          font-size: 24px;
-          letter-spacing: -0.02em;
-          font-weight: 800;
-          color: var(--header-text);
-        }
-        .brandtext p {
-          margin: 2px 0 0;
-          font-size: 12px;
-          color: var(--header-subtext);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
         .chainbadge {
           font-size: 12px;
@@ -556,7 +648,7 @@ export default function Home() {
           padding: 12px 15px;
           border-radius: 16px 16px 16px 4px;
         }
-        .content { white-space: pre-wrap; line-height: 1.5; font-size: 15px; }
+        .content { white-space: pre-wrap; line-height: 1.5; font-size: 15px; overflow-wrap: anywhere; }
         .meta {
           display: flex;
           align-items: center;
@@ -570,6 +662,11 @@ export default function Home() {
         }
         .verify.ok { color: var(--verify-ok); }
         .verify.warn { color: var(--verify-warn); }
+        .replynote {
+          margin-top: 8px;
+          font-size: 12px;
+          color: var(--text-muted);
+        }
         .speak {
           margin-left: auto;
           border: 1.5px solid var(--border);
@@ -610,17 +707,52 @@ export default function Home() {
           text-align: center;
           padding: 8px 16px;
         }
+        .livecaption {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 30px;
+          padding: 8px 18px 0;
+          font-size: 13.5px;
+        }
+        .livecaption .rec {
+          width: 9px;
+          height: 9px;
+          flex-shrink: 0;
+          border-radius: 50%;
+          background: var(--danger);
+          animation: blink 1.2s infinite;
+        }
+        .livecaption .rec.busy {
+          background: var(--verify-warn);
+        }
+        .livecaption .txt {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: var(--text-muted);
+        }
+        .langdetected {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-muted);
+          text-align: center;
+          padding: 6px 16px 0;
+        }
         .mic.muted {
           opacity: 0.6;
         }
         .composer {
           display: flex;
+          align-items: flex-end;
           gap: 8px;
           padding: 14px 16px;
           border-top: 3px solid var(--header-border);
           background: color-mix(in srgb, var(--bg) 86%, transparent);
         }
         .langpick {
+          height: 50px;
           border: 2px solid var(--border);
           border-radius: 12px;
           background: var(--surface);
@@ -632,20 +764,29 @@ export default function Home() {
           max-width: 120px;
         }
         .langpick:disabled { opacity: 0.6; cursor: default; }
-        .composer input {
+        .composer textarea {
           flex: 1;
           min-width: 0;
+          height: 50px;
+          min-height: 50px;
+          max-height: ${INPUT_MAX_HEIGHT}px;
           padding: 13px 15px;
           border: 2px solid var(--border);
           border-radius: 12px;
+          font: inherit;
           font-size: 16px; /* >=16px stops iOS Safari zooming on focus */
+          line-height: 1.4;
           background: var(--surface);
           color: var(--text);
           outline: none;
+          resize: none;
+          overflow-y: hidden;
+          overflow-wrap: anywhere;
         }
-        .composer input::placeholder { color: var(--text-muted); opacity: 0.8; }
-        .composer input:focus { box-shadow: 0 0 0 3px var(--ring); }
+        .composer textarea::placeholder { color: var(--text-muted); opacity: 0.8; }
+        .composer textarea:focus { box-shadow: 0 0 0 3px var(--ring); }
         .mic, .go {
+          height: 50px;
           border: 2px solid var(--border);
           border-radius: 12px;
           font-weight: 700;
@@ -685,7 +826,6 @@ export default function Home() {
         /* ---- Tablet ---- */
         @media (max-width: 768px) {
           .top { padding: 14px 14px; gap: 10px; }
-          .brandtext h1 { font-size: 21px; }
           .chat { padding: 16px; }
           .bubble { max-width: 88%; }
         }
@@ -701,21 +841,20 @@ export default function Home() {
           }
           .wm { font-size: 19px; }
           .tagline { display: none; }
-          .brandtext h1 { font-size: 19px; }
-          .brandtext p { display: none; }
           .chainbadge { display: none; }
           .chat { padding: 14px 12px; gap: 12px; }
-          .bubble { max-width: 90%; }
+          .bubble { max-width: 94%; }
           .composer { padding: 10px 12px; gap: 6px; flex-wrap: wrap; }
           .langpick {
             order: 3;
             flex: 1 1 100%;
             max-width: none;
-            padding: 8px;
+            height: 42px;
+            padding: 0 8px;
           }
           .mic { order: 1; min-width: 46px; }
-          .composer input { order: 2; }
-          .go { order: 4; flex: 1 1 100%; padding: 12px; }
+          .composer textarea { order: 2; }
+          .go { order: 4; flex: 1 1 100%; height: 46px; }
         }
       `}</style>
     </>

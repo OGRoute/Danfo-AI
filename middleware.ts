@@ -1,11 +1,13 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// Clerk is optional: if its keys aren't configured, fall through to a no-op so
+// Mirrors the decision in app/layout.tsx: Clerk runs with real keys, or in
+// keyless mode during local development. Otherwise fall through to a no-op so
 // the app (anonymous + wallet flows) keeps working without Clerk.
 const hasClerk =
-  !!process.env.CLERK_SECRET_KEY &&
-  !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  (!!process.env.CLERK_SECRET_KEY && !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) ||
+  (process.env.NODE_ENV === "development" &&
+    !/^(1|true)$/i.test(process.env.NEXT_PUBLIC_CLERK_KEYLESS_DISABLED || ""));
 
 export default hasClerk
   ? clerkMiddleware()

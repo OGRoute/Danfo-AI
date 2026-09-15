@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
+import type { LatLng } from "../lib/lagos-stops";
+import type { TripPlan } from "../lib/route-planner";
 
 // Leaflet touches `window` on import, so the map must be client-only (no SSR).
 const RouteMap = dynamic(() => import("./RouteMap"), {
@@ -11,30 +14,38 @@ const RouteMap = dynamic(() => import("./RouteMap"), {
 interface Props {
   open: boolean;
   onClose: () => void;
-  route: string[];
+  /** Trip to show (best route + alternatives). */
+  plan: TripPlan | null;
+  /** Stops mentioned in chat, shown when there is no computed trip. */
+  stops: string[];
+  /** Live GPS position updates, so chat can plan from where the rider is. */
+  onPosition?: (pos: LatLng) => void;
 }
 
-/** Full-screen overlay that shows the Lagos map with the detected route. */
-export default function MapPanel({ open, onClose, route }: Props) {
+/** Full-screen live map: the planned route on real roads plus your position. */
+export default function MapPanel({ open, onClose, plan, stops, onPosition }: Props) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
 
+  const itineraries = plan?.best ? [plan.best, ...plan.alternatives] : [];
+  const subtitle = plan?.best
+    ? `${plan.best.from} → ${plan.best.to}`
+    : stops.length > 1
+      ? `${stops[0]} → ${stops[stops.length - 1]}`
+      : stops[0] ?? "All Lagos stops";
+
   return (
-    <div
-      className="map-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Route map"
-    >
+    <div className="map-overlay" role="dialog" aria-modal="true" aria-label="Live route map">
       <header className="map-head">
         <div className="map-title">
-          <strong>Route map</strong>
-          <span className="sub">
-            {route.length > 1
-              ? `${route[0]} → ${route[route.length - 1]}`
-              : route.length === 1
-              ? route[0]
-              : "All Lagos stops"}
-          </span>
+          <strong>Live map</strong>
+          <span className="sub">{subtitle}</span>
         </div>
         <button className="close" onClick={onClose} aria-label="Close map">
           ✕
@@ -42,13 +53,8 @@ export default function MapPanel({ open, onClose, route }: Props) {
       </header>
 
       <div className="map-body">
-        <RouteMap route={route} />
+        <RouteMap itineraries={itineraries} stops={stops} onPosition={onPosition} />
       </div>
-
-      <p className="map-foot">
-        Tap a stop for its name. Route highlighted from your conversation ·
-        &copy; OpenStreetMap
-      </p>
 
       <style jsx>{`
         .map-overlay {
@@ -100,14 +106,7 @@ export default function MapPanel({ open, onClose, route }: Props) {
         .map-body {
           flex: 1;
           min-height: 0;
-        }
-        .map-foot {
-          margin: 0;
-          padding: 8px 14px;
-          font-size: 11px;
-          text-align: center;
-          color: var(--provenance);
-          background: var(--bg);
+          position: relative;
         }
         :global(.maploading) {
           display: flex;

@@ -6,14 +6,28 @@ DanfoAI is a voice-and-text agent that helps Lagos residents navigate *danfo*
 (yellow minibuses) and BRT routes using natural language in **Yoruba, Igbo,
 Hausa, Nigerian Pidgin, and English**. No maps, no menus — just talk.
 
-> _"Mo fẹ lọ si Oshodi lati CMS"_ → DanfoAI replies in Yoruba with the best
-> danfo route, **where to board it, the fare in ₦**, and where to change.
+> _"Mo fẹ lọ si Oshodi lati CMS"_ → DanfoAI understands the Yoruba and replies
+> with the best route, **where to board each vehicle, where to get off, and the
+> fare in ₦**.
 
-Voice input is powered by **Intron Sahara** streaming speech-to-text
-(`@intron_health/intron_transcriber_streaming`) — African-accent ASR that
-natively understands Yoruba, Igbo, Hausa, English and Nigerian Pidgin, with
-live transcripts while you speak. When Intron isn't configured, the app falls
-back to browser Web Speech → local Whisper → 0G Whisper.
+What's inside:
+
+- **Accurate, detailed routes.** A deterministic trip planner computes every
+  leg — danfo, BRT, Blue/Red Line train, ferry, keke — with boarding point,
+  drop-off, fare and time from a 2026 Lagos route database. The model on 0G
+  Compute phrases that plan in English or Pidgin; a reply that drops or changes
+  a fact is replaced by the computed answer, and Yoruba/Igbo/Hausa trip answers
+  are shown in English until 0G offers a stronger model. Each reply comes with a
+  trip card showing the same plan.
+- **Voice in your language (Intron).** Speech-to-text for English, Pidgin,
+  Yoruba, Igbo and Hausa, with auto-detect, that keeps listening until you tap
+  stop. Replies are read aloud with Intron's native voices. Without an Intron
+  key it falls back to local Whisper / the browser (English).
+- **Live map.** Routes drawn along real roads, your live GPS position with
+  heading, follow mode, step-by-step progress and ETA — plus a trip simulation
+  for demos away from Lagos.
+- **Sign in with Clerk** (Google, email, …), a wallet, or anonymously.
+- **Light, dark or system theme.**
 
 Built for the **0G Zero Cup**.
 
@@ -25,7 +39,7 @@ DanfoAI breaks without any one of 0G's layers — it is not a bolt-on:
 
 | Layer | What it does in DanfoAI | Why it matters |
 |-------|------------------------|----------------|
-| **0G Compute** | Runs the multilingual LLM inference on decentralized GPUs. Every reply is verified via `processResponse()` (TEE-backed). | Answers are **verifiable & censorship-resistant** — a centralized API can't prove its output wasn't altered. |
+| **0G Compute** | Runs the LLM inference on decentralized GPUs. Every model reply is verified via `processResponse()` (TEE-backed). | Answers are **verifiable & censorship-resistant** — a centralized API can't prove its output wasn't altered. |
 | **0G Storage** | Holds the route knowledge base, content-addressed by Merkle root hash. The AI grounds every answer in this data. | Riders can prove the AI reasoned over the **community's actual route data**, not a hidden dataset. |
 | **0G Chain** | Records community route corrections in the `RouteCorrections` contract. | The knowledge base is **community-owned and auditable** — a living transit map of Lagos. |
 
@@ -44,25 +58,27 @@ User: "Mo fẹ lọ si Oshodi lati CMS"
         │
         ├─► 0G Storage  ──►  load route KB (Merkle-verified)
         │
-        ├─► 0G Compute  ──►  LLM inference + processResponse() verification
-        │                     (detects language, returns route + fare)
+        ├─► trip planner ──►  legs, boarding points, fares, times (deterministic)
+        │
+        ├─► 0G Compute  ──►  LLM phrases the plan + processResponse() verification
         │
         └─► 0G Chain    ──►  community corrections registry (read/write)
         ▼
-Reply in Yoruba: route, boarding point, fare in ₦, change point ✓ verified on 0G
+Reply: each vehicle, boarding point, drop-off, fare in ₦ + trip card and live map
 ```
 
-**Cost note:** the app pre-funds each 0G Compute provider sub-account with
-0.5 0G *before* the first request. That sidesteps the SDK's automatic 1 0G
-transfer (which fires whenever a sub-account is missing or empty), keeping the
-wallet's total 0G spend under ~0.6 per provider.
+**Cost note:** the 0G contract only needs 0.1 0G in a provider sub-account,
+but the SDK on its own locks 1 0G per new provider and tries to keep ~8.8 0G
+locked for the chat model. DanfoAI funds sub-accounts itself (0.5 0G target,
+topped up when below 0.2 0G) and switches the SDK's auto top-up off, so at most
+~0.5 0G is locked per provider. A reply costs roughly 0.003–0.006 0G.
 
 ---
 
 ## Quick start
 
 ### Prerequisites
-- Node 18+
+- Node 22.19+ (`nvm use` picks it up from `.nvmrc`; undici 8 needs it)
 - A funded **0G Galileo testnet** wallet:
   1. Create a fresh EVM wallet (e.g. MetaMask) — use a throwaway, never a real-funds wallet.
   2. Get test tokens from the faucet: https://faucet.0g.ai
@@ -71,7 +87,7 @@ wallet's total 0G spend under ~0.6 per provider.
 ### Install
 ```bash
 npm install
-cp .env.local.example .env.local   # then add your PRIVATE_KEY
+cp .env.example .env.local   # then add PRIVATE_KEY (and INTRON_API_KEY for voice)
 ```
 
 ### Seed the route data onto 0G Storage
@@ -92,7 +108,10 @@ npm run dev
 # open http://localhost:3000
 ```
 
-Type or tap the mic and ask for a route in any supported language.
+Type or tap the mic and ask for a route in any supported language, then open
+🗺️ Live map to follow it. In development, Clerk sign-in works without keys
+(keyless mode); add `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`
+for production. See `.env.example` for every option.
 
 ---
 
@@ -113,7 +132,9 @@ danfo-ai/
 │   ├── prompt.ts                # multilingual system prompt builder
 │   └── routes-kb.ts             # KB loader (0G Storage → seed fallback)
 ├── components/
-│   └── IntronVoiceInput.tsx     # Intron Sahara streaming STT widget
+│   ├── RouteMap.tsx             # live map: road routes, GPS, progress, simulation
+│   ├── TripCard.tsx             # computed trip under each reply
+│   └── IntronVoiceInput.tsx     # optional Intron streaming widget
 ├── contracts/
 │   └── RouteCorrections.sol     # community corrections registry
 ├── scripts/
@@ -127,7 +148,7 @@ danfo-ai/
 
 ## Roadmap (post-group-stage)
 
-- Voice replies via 0G Compute speech models (full hands-free for drivers).
+- Fully hands-free mode for drivers (auto-send after speaking, auto-read replies).
 - Upvote-weighted corrections so the most-trusted community data wins.
 - Live crowding/traffic signals contributed by riders.
 - Expand beyond Lagos to Abuja, Kano, Ibadan.

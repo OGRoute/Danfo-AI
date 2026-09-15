@@ -1,73 +1,979 @@
 {
-  "version": 1,
-  "updatedAt": "2026-06-22",
+  "version": 2,
+  "updatedAt": "2026-09-14",
   "currency": "NGN",
-  "note": "Seed knowledge base for DanfoAI. Fares are approximate and change often; community corrections on 0G Chain keep this current.",
+  "note": "Knowledge base for DanfoAI. Community corrections on 0G Chain keep it current.",
+  "fareNote": "2026 fare estimates compiled from LAMATA's published BRT and rail fares and rider-reported danfo fares. Danfo fares rise at rush hour, in rain and during fuel scarcity. BRT, Blue Line, Red Line and LAGFERRY are cashless — pay with a Cowry card.",
   "stops": [
-    "CMS", "Obalende", "TBS", "Marina", "Oshodi", "Yaba", "Ojuelegba",
-    "Mile 2", "Festac", "Ikeja", "Berger", "Ojota", "Maryland", "Ketu",
-    "Mile 12", "Ikorodu", "Ajah", "Lekki Phase 1", "Victoria Island",
-    "Surulere", "Costain", "Iyana Ipaja", "Agege", "Abule Egba"
+    "Ikorodu",
+    "Owode Onirin",
+    "Mile 12",
+    "Ketu",
+    "Ojota",
+    "Maryland",
+    "Anthony",
+    "Fadeyi",
+    "Yaba",
+    "Oyingbo",
+    "TBS",
+    "Oshodi",
+    "Ikeja",
+    "CMS",
+    "Bolade",
+    "Iyana Ipaja",
+    "Abule Egba",
+    "Berger",
+    "Obalende",
+    "Marina",
+    "Victoria Island",
+    "Lekki Phase 1",
+    "Ajah",
+    "Mile 2",
+    "Orile Iganmu",
+    "Badagry",
+    "Festac",
+    "National Theatre",
+    "Suru Alaba",
+    "Agbado",
+    "Iju",
+    "Agege",
+    "Shogunle",
+    "Mushin",
+    "Ikorodu Ferry Terminal",
+    "Falomo",
+    "Costain",
+    "Ojuelegba",
+    "Iddo",
+    "Surulere",
+    "Cele",
+    "Ikotun",
+    "Egbeda"
   ],
   "routes": [
     {
-      "from": "CMS", "to": "Oshodi", "mode": "danfo", "fare": [400, 600],
-      "via": ["Costain", "Surulere", "Ojuelegba"],
-      "board": "CMS danfo park, under the bridge by Tafawa Balewa Square, Marina",
-      "notes": "Frequent danfo from CMS park. Heavy traffic 7-9am and 4-7pm."
+      "from": "Ikorodu",
+      "to": "TBS",
+      "mode": "brt",
+      "fare": [
+        900,
+        1000
+      ],
+      "duration": [
+        75,
+        120
+      ],
+      "line": "LAMATA BRT — Ikorodu–TBS corridor",
+      "via": [
+        "Owode Onirin",
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Anthony",
+        "Fadeyi",
+        "Yaba",
+        "Oyingbo"
+      ],
+      "board": "Ikorodu BRT Terminal by Ikorodu Garage/roundabout — buy or top up a Cowry card at the ticket window and tap in at the gate",
+      "boardReverse": "TBS BRT Terminal at Tafawa Balewa Square (Onikan side) — tap your Cowry card at the gate",
+      "notes": "LAMATA fare ~₦960 (2026). Cowry card only (buy/top up at the terminal). Dedicated BRT lane — fastest road option into the Island at rush hour; long queues at Ikorodu 6–8am."
     },
     {
-      "from": "Oshodi", "to": "Ikeja", "mode": "brt", "fare": [300, 400],
-      "via": ["Bolade"],
-      "board": "Oshodi BRT terminal, Bolade axis of Agege Motor Road",
-      "notes": "BRT lane available; smoother than danfo in rush hour."
+      "from": "Ikorodu",
+      "to": "Oshodi",
+      "mode": "brt",
+      "fare": [
+        650,
+        700
+      ],
+      "duration": [
+        60,
+        100
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Owode Onirin",
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland"
+      ],
+      "board": "Ikorodu BRT Terminal by Ikorodu Garage",
+      "boardReverse": "Oshodi Transport Interchange — ask for the Ikorodu BRT bay",
+      "notes": "LAMATA fare ~₦680 (2026). Cowry card only (buy/top up at the terminal)."
     },
     {
-      "from": "CMS", "to": "Ikeja", "mode": "mixed", "fare": [700, 1000],
-      "via": ["Oshodi"],
-      "board": "CMS danfo park, under the bridge by Tafawa Balewa Square, Marina",
-      "notes": "Take danfo/BRT CMS->Oshodi, then BRT Oshodi->Ikeja. Change at Oshodi terminal."
+      "from": "Ikorodu",
+      "to": "Ikeja",
+      "mode": "brt",
+      "fare": [
+        650,
+        700
+      ],
+      "duration": [
+        60,
+        100
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Owode Onirin",
+        "Mile 12",
+        "Ketu",
+        "Ojota"
+      ],
+      "board": "Ikorodu BRT Terminal by Ikorodu Garage",
+      "boardReverse": "Ikeja Bus Terminal (Ikeja Under Bridge, Obafemi Awolowo Way)",
+      "notes": "LAMATA fare ~₦680 (2026). Cowry card only (buy/top up at the terminal)."
     },
     {
-      "from": "Obalende", "to": "Lekki Phase 1", "mode": "danfo", "fare": [400, 700],
-      "via": ["Victoria Island"],
-      "board": "Obalende under-bridge danfo park",
-      "notes": "Danfo from Obalende under-bridge park. Ask for Lekki first gate."
+      "from": "Mile 12",
+      "to": "TBS",
+      "mode": "brt",
+      "fare": [
+        600,
+        800
+      ],
+      "duration": [
+        45,
+        75
+      ],
+      "line": "LAMATA BRT — Ikorodu Road corridor",
+      "via": [
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Anthony",
+        "Fadeyi",
+        "Yaba",
+        "Oyingbo"
+      ],
+      "board": "Mile 12 BRT station on Ikorodu Road (by Mile 12 market)",
+      "boardReverse": "TBS BRT Terminal at Tafawa Balewa Square",
+      "notes": "Cowry card only (buy/top up at the terminal). Buses every 3–8 min at peak."
     },
     {
-      "from": "Yaba", "to": "Oshodi", "mode": "danfo", "fare": [300, 500],
-      "via": ["Ojuelegba"],
-      "board": "Yaba bus stop on Herbert Macaulay Way, by the Oyingbo market end",
-      "notes": "Board at Yaba bus stop heading toward Ojuelegba then Oshodi."
+      "from": "Fadeyi",
+      "to": "CMS",
+      "mode": "brt",
+      "fare": [
+        300,
+        450
+      ],
+      "duration": [
+        30,
+        50
+      ],
+      "line": "LAMATA BRT — Ikorodu Road corridor",
+      "via": [
+        "Yaba",
+        "Oyingbo"
+      ],
+      "board": "Fadeyi BRT station on Ikorodu Road",
+      "boardReverse": "CMS BRT stop on Marina",
+      "notes": "Cowry card only (buy/top up at the terminal)."
     },
     {
-      "from": "Mile 2", "to": "CMS", "mode": "danfo", "fare": [400, 600],
-      "via": ["Costain"],
-      "board": "Mile 2 danfo park on the Badagry Expressway service road",
-      "notes": "Apapa-Oshodi expressway can be slow due to trucks."
+      "from": "Oshodi",
+      "to": "Abule Egba",
+      "mode": "brt",
+      "fare": [
+        500,
+        700
+      ],
+      "duration": [
+        35,
+        60
+      ],
+      "line": "LAMATA BRT — Oshodi–Abule Egba corridor",
+      "via": [
+        "Bolade",
+        "Ikeja",
+        "Iyana Ipaja"
+      ],
+      "board": "Oshodi Transport Interchange — Abule Egba BRT bay",
+      "boardReverse": "Abule Egba BRT Terminal by the Abule Egba flyover",
+      "notes": "LAMATA fare ~₦680 end to end (2026). Cowry card only (buy/top up at the terminal)."
     },
     {
-      "from": "Ikorodu", "to": "TBS", "mode": "brt", "fare": [500, 700],
-      "via": ["Mile 12", "Ketu", "Ojota"],
-      "board": "Ikorodu BRT terminal by the Ikorodu roundabout (also serves Agric)",
-      "notes": "Ikorodu BRT corridor is the fastest option into Lagos Island."
+      "from": "Abule Egba",
+      "to": "Ikeja",
+      "mode": "brt",
+      "fare": [
+        500,
+        600
+      ],
+      "duration": [
+        25,
+        45
+      ],
+      "line": "LAMATA BRT — Oshodi–Abule Egba corridor",
+      "via": [
+        "Iyana Ipaja"
+      ],
+      "board": "Abule Egba BRT Terminal by the Abule Egba flyover",
+      "boardReverse": "Ikeja Along BRT station on the Lagos–Abeokuta Expressway",
+      "notes": "LAMATA fare ~₦560 (2026). Cowry card only (buy/top up at the terminal)."
     },
     {
-      "from": "Berger", "to": "Oshodi", "mode": "danfo", "fare": [300, 500],
-      "via": ["Ojota", "Maryland"],
-      "board": "Berger bus stop on the Lagos-Ibadan Expressway service lane",
-      "notes": "Along the Lagos-Ibadan expressway service lane."
+      "from": "Oshodi",
+      "to": "Ikeja",
+      "mode": "brt",
+      "fare": [
+        350,
+        500
+      ],
+      "duration": [
+        15,
+        30
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Bolade"
+      ],
+      "board": "Oshodi Transport Interchange — Abule Egba/Ikeja BRT bay",
+      "boardReverse": "Ikeja Along BRT station",
+      "notes": "Cowry card only (buy/top up at the terminal). Smoother than danfo at rush hour."
     },
     {
-      "from": "Ajah", "to": "CMS", "mode": "danfo", "fare": [700, 1200],
-      "via": ["Lekki Phase 1", "Victoria Island", "Obalende"],
-      "board": "Ajah junction danfo park, by the flyover on the Lekki-Epe Expressway",
-      "notes": "Long route along Lekki-Epe expressway; tolls and traffic add time."
+      "from": "Oshodi",
+      "to": "CMS",
+      "mode": "brt",
+      "fare": [
+        450,
+        600
+      ],
+      "duration": [
+        45,
+        80
+      ],
+      "line": "LAMATA BRT",
+      "board": "Oshodi Transport Interchange — CMS/Island BRT bay",
+      "boardReverse": "CMS BRT stop on Marina (by CMS bus stop)",
+      "notes": "Cowry card only (buy/top up at the terminal)."
+    },
+    {
+      "from": "Berger",
+      "to": "CMS",
+      "mode": "brt",
+      "fare": [
+        500,
+        700
+      ],
+      "duration": [
+        60,
+        100
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Ojota",
+        "Maryland",
+        "Yaba"
+      ],
+      "board": "Berger BRT stop at Ojodu-Berger (Lagos–Ibadan Expressway service lane)",
+      "boardReverse": "CMS BRT stop on Marina",
+      "notes": "Cowry card only (buy/top up at the terminal)."
+    },
+    {
+      "from": "Ikeja",
+      "to": "Obalende",
+      "mode": "brt",
+      "fare": [
+        650,
+        750
+      ],
+      "duration": [
+        60,
+        90
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Maryland"
+      ],
+      "board": "Ikeja Bus Terminal (Ikeja Under Bridge)",
+      "boardReverse": "Obalende BRT stop by Obalende under-bridge",
+      "notes": "LAMATA fare ~₦720 (2026). Cowry card only (buy/top up at the terminal)."
+    },
+    {
+      "from": "Marina",
+      "to": "Lekki Phase 1",
+      "mode": "brt",
+      "fare": [
+        550,
+        600
+      ],
+      "duration": [
+        30,
+        60
+      ],
+      "line": "LAMATA BRT — Lekki–Epe corridor",
+      "via": [
+        "Obalende",
+        "Victoria Island"
+      ],
+      "board": "Marina BRT stop (CMS end of Marina)",
+      "boardReverse": "Lekki Phase 1 BRT stop at Lekki first gate",
+      "notes": "LAMATA fare ~₦570 (2026). Cowry card only (buy/top up at the terminal). Lekki–Epe Expressway jams 4–8pm outbound."
+    },
+    {
+      "from": "Marina",
+      "to": "Ajah",
+      "mode": "brt",
+      "fare": [
+        900,
+        950
+      ],
+      "duration": [
+        60,
+        120
+      ],
+      "line": "LAMATA BRT — Lekki–Epe corridor",
+      "via": [
+        "Obalende",
+        "Victoria Island",
+        "Lekki Phase 1"
+      ],
+      "board": "Marina BRT stop (CMS end of Marina)",
+      "boardReverse": "Ajah BRT stop by Ajah under-bridge",
+      "notes": "LAMATA fare ~₦920 (2026). Cowry card only (buy/top up at the terminal)."
+    },
+    {
+      "from": "Mile 2",
+      "to": "TBS",
+      "mode": "brt",
+      "fare": [
+        400,
+        500
+      ],
+      "duration": [
+        35,
+        60
+      ],
+      "line": "LAMATA BRT — Lagos–Badagry corridor",
+      "via": [
+        "Orile Iganmu"
+      ],
+      "board": "Mile 2 BRT station on the Lagos–Badagry Expressway",
+      "boardReverse": "TBS BRT Terminal",
+      "notes": "Cowry card only (buy/top up at the terminal). The Blue Line train on the same corridor is usually faster."
+    },
+    {
+      "from": "Badagry",
+      "to": "Mile 2",
+      "mode": "brt",
+      "fare": [
+        1100,
+        1150
+      ],
+      "duration": [
+        60,
+        120
+      ],
+      "line": "LAMATA BRT — Lagos–Badagry corridor",
+      "via": [
+        "Festac"
+      ],
+      "board": "Badagry Roundabout BRT stop",
+      "boardReverse": "Mile 2 BRT station",
+      "notes": "LAMATA fare ~₦1,140 (2026). Cowry card only (buy/top up at the terminal)."
+    },
+    {
+      "from": "Marina",
+      "to": "Mile 2",
+      "mode": "rail",
+      "fare": [
+        560,
+        750
+      ],
+      "duration": [
+        15,
+        25
+      ],
+      "line": "Lagos Blue Line",
+      "via": [
+        "National Theatre",
+        "Orile Iganmu",
+        "Suru Alaba"
+      ],
+      "board": "Marina Station (Blue Line) on Marina, near CMS — tap your Cowry card at the gate",
+      "boardReverse": "Mile 2 Station (Blue Line) by Mile 2 interchange — tap your Cowry card at the gate",
+      "notes": "₦750 full trip; 25% off 10am–4pm (≈₦560). Mon–Sat 5:30am–11pm, every 8–10 min at peak, limited Sunday service. Tap out when you exit.",
+      "minFare": 200,
+      "wait": 8
+    },
+    {
+      "from": "Agbado",
+      "to": "Oyingbo",
+      "mode": "rail",
+      "fare": [
+        1000,
+        1500
+      ],
+      "duration": [
+        35,
+        50
+      ],
+      "line": "Lagos Red Line",
+      "via": [
+        "Iju",
+        "Agege",
+        "Ikeja",
+        "Shogunle",
+        "Oshodi",
+        "Mushin",
+        "Yaba"
+      ],
+      "board": "Agbado Station (Red Line) — tap your Cowry card at the gate",
+      "boardReverse": "Oyingbo Station (Red Line), Ebute Metta — tap your Cowry card at the gate",
+      "notes": "Zone fares: Agbado–Ikeja ₦500, Ikeja–Oyingbo ₦500, full line ₦1,000–₦1,500. Fewer trains than the Blue Line — check the LAMATA timetable before you go.",
+      "minFare": 500,
+      "wait": 20
+    },
+    {
+      "from": "Agbado",
+      "to": "Ikeja",
+      "mode": "rail",
+      "fare": [
+        500,
+        500
+      ],
+      "duration": [
+        15,
+        25
+      ],
+      "line": "Lagos Red Line",
+      "via": [
+        "Iju",
+        "Agege"
+      ],
+      "board": "Agbado Station (Red Line)",
+      "boardReverse": "Ikeja Station (Red Line)",
+      "notes": "Zone 2 fare ₦500. Check the timetable.",
+      "minFare": 500,
+      "wait": 20
+    },
+    {
+      "from": "Ikeja",
+      "to": "Oyingbo",
+      "mode": "rail",
+      "fare": [
+        500,
+        500
+      ],
+      "duration": [
+        20,
+        30
+      ],
+      "line": "Lagos Red Line",
+      "via": [
+        "Shogunle",
+        "Oshodi",
+        "Mushin",
+        "Yaba"
+      ],
+      "board": "Ikeja Station (Red Line)",
+      "boardReverse": "Oyingbo Station (Red Line), Ebute Metta",
+      "notes": "Zone 1 fare ₦500. Check the timetable.",
+      "minFare": 500,
+      "wait": 20
+    },
+    {
+      "from": "Ikorodu Ferry Terminal",
+      "to": "Falomo",
+      "mode": "ferry",
+      "fare": [
+        2000,
+        3500
+      ],
+      "duration": [
+        45,
+        70
+      ],
+      "line": "LAGFERRY / licensed boats",
+      "board": "Ebute Ikorodu Ferry Terminal (jetty)",
+      "boardReverse": "Five Cowries Terminal, Falomo (Ikoyi)",
+      "notes": "Life jacket is compulsory. Skips Ikorodu Road traffic completely; boats stop at dusk and in bad weather.",
+      "wait": 20
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Ikorodu Ferry Terminal",
+      "mode": "keke",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        10,
+        20
+      ],
+      "board": "Keke park at Ikorodu Garage — ask for 'Ebute jetty'",
+      "boardReverse": "Keke stand outside Ebute Ikorodu Ferry Terminal",
+      "notes": "Short keke hop to the jetty."
+    },
+    {
+      "from": "Falomo",
+      "to": "Obalende",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        10,
+        25
+      ],
+      "board": "Falomo bus stop by Falomo under-bridge",
+      "boardReverse": "Obalende under-bridge park"
+    },
+    {
+      "from": "CMS",
+      "to": "Oshodi",
+      "mode": "danfo",
+      "fare": [
+        500,
+        800
+      ],
+      "duration": [
+        45,
+        90
+      ],
+      "via": [
+        "Costain",
+        "Ojuelegba"
+      ],
+      "board": "CMS bus stop (Marina side) — listen for conductors shouting 'Oshodi!'",
+      "boardReverse": "Oshodi under-bridge — ask for 'CMS' or 'Obalende' buses",
+      "notes": "Frequent buses. Heavy traffic 7–9am and 4–7pm."
+    },
+    {
+      "from": "Ojuelegba",
+      "to": "CMS",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        25,
+        50
+      ],
+      "via": [
+        "Costain"
+      ],
+      "board": "Ojuelegba under-bridge bus stop — buses shouting 'CMS! Obalende!'",
+      "boardReverse": "CMS bus stop (Marina side)"
+    },
+    {
+      "from": "Yaba",
+      "to": "Oshodi",
+      "mode": "danfo",
+      "fare": [
+        300,
+        450
+      ],
+      "duration": [
+        25,
+        50
+      ],
+      "via": [
+        "Ojuelegba"
+      ],
+      "board": "Yaba bus stop on Herbert Macaulay Way (by Tejuosho market)",
+      "boardReverse": "Oshodi under-bridge — buses shouting 'Yaba!'"
+    },
+    {
+      "from": "Yaba",
+      "to": "CMS",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        25,
+        50
+      ],
+      "via": [
+        "Oyingbo",
+        "Iddo"
+      ],
+      "board": "Yaba bus stop on Herbert Macaulay Way (by Tejuosho market)",
+      "boardReverse": "CMS bus stop (Marina side)",
+      "notes": "Carter Bridge can jam in the evening."
+    },
+    {
+      "from": "Obalende",
+      "to": "Lekki Phase 1",
+      "mode": "danfo",
+      "fare": [
+        500,
+        800
+      ],
+      "duration": [
+        25,
+        60
+      ],
+      "via": [
+        "Victoria Island"
+      ],
+      "board": "Obalende under-bridge park — Lekki/Ajah buses",
+      "boardReverse": "Lekki Phase 1 first-gate bus stop",
+      "notes": "Ask the conductor for 'Lekki first gate'."
+    },
+    {
+      "from": "Victoria Island",
+      "to": "Lekki Phase 1",
+      "mode": "danfo",
+      "fare": [
+        400,
+        700
+      ],
+      "duration": [
+        15,
+        40
+      ],
+      "board": "Victoria Island bus stop on Ozumba Mbadiwe Avenue",
+      "boardReverse": "Lekki Phase 1 first-gate bus stop"
+    },
+    {
+      "from": "Obalende",
+      "to": "Ajah",
+      "mode": "danfo",
+      "fare": [
+        800,
+        1200
+      ],
+      "duration": [
+        60,
+        120
+      ],
+      "via": [
+        "Victoria Island",
+        "Lekki Phase 1"
+      ],
+      "board": "Obalende under-bridge park — Ajah buses",
+      "boardReverse": "Ajah under-bridge park",
+      "notes": "Lekki–Epe Expressway is slow 4–8pm."
+    },
+    {
+      "from": "Ajah",
+      "to": "CMS",
+      "mode": "danfo",
+      "fare": [
+        900,
+        1300
+      ],
+      "duration": [
+        70,
+        150
+      ],
+      "via": [
+        "Lekki Phase 1",
+        "Victoria Island",
+        "Obalende"
+      ],
+      "board": "Ajah under-bridge park (by the Ajah flyover on Lekki–Epe Expressway)",
+      "boardReverse": "CMS bus stop (Marina side)",
+      "notes": "Long route; many riders change at Obalende."
+    },
+    {
+      "from": "Mile 2",
+      "to": "CMS",
+      "mode": "danfo",
+      "fare": [
+        500,
+        700
+      ],
+      "duration": [
+        35,
+        70
+      ],
+      "via": [
+        "Orile Iganmu",
+        "Costain"
+      ],
+      "board": "Mile 2 motor park on the Lagos–Badagry Expressway service road",
+      "boardReverse": "CMS bus stop (Marina side)",
+      "notes": "Truck traffic around Apapa can be slow; the Blue Line train is quicker."
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Mile 12",
+      "mode": "danfo",
+      "fare": [
+        500,
+        800
+      ],
+      "duration": [
+        40,
+        90
+      ],
+      "via": [
+        "Owode Onirin"
+      ],
+      "board": "Ikorodu Garage",
+      "boardReverse": "Mile 12 bus stop (Ikorodu Road, by Mile 12 market)"
+    },
+    {
+      "from": "Mile 12",
+      "to": "Oshodi",
+      "mode": "danfo",
+      "fare": [
+        400,
+        600
+      ],
+      "duration": [
+        30,
+        60
+      ],
+      "via": [
+        "Ketu",
+        "Ojota",
+        "Maryland"
+      ],
+      "board": "Mile 12 bus stop (Ikorodu Road)",
+      "boardReverse": "Oshodi under-bridge"
+    },
+    {
+      "from": "Berger",
+      "to": "Oshodi",
+      "mode": "danfo",
+      "fare": [
+        400,
+        600
+      ],
+      "duration": [
+        35,
+        70
+      ],
+      "via": [
+        "Ojota",
+        "Maryland"
+      ],
+      "board": "Berger bus stop at Ojodu-Berger (Lagos–Ibadan Expressway service lane)",
+      "boardReverse": "Oshodi under-bridge"
+    },
+    {
+      "from": "Ikeja",
+      "to": "Maryland",
+      "mode": "danfo",
+      "fare": [
+        200,
+        350
+      ],
+      "duration": [
+        15,
+        30
+      ],
+      "board": "Ikeja Under Bridge bus stop",
+      "boardReverse": "Maryland bus stop (by Maryland Mall)"
+    },
+    {
+      "from": "Ojota",
+      "to": "Ikeja",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        15,
+        35
+      ],
+      "board": "Ojota bus stop (new garage)",
+      "boardReverse": "Ikeja Under Bridge bus stop"
+    },
+    {
+      "from": "Ikeja",
+      "to": "Berger",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        40
+      ],
+      "board": "Ikeja Under Bridge bus stop",
+      "boardReverse": "Berger bus stop at Ojodu-Berger"
+    },
+    {
+      "from": "Agege",
+      "to": "Ikeja",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        15,
+        35
+      ],
+      "board": "Agege Pen Cinema bus stop",
+      "boardReverse": "Ikeja Under Bridge bus stop"
+    },
+    {
+      "from": "Oshodi",
+      "to": "Abule Egba",
+      "mode": "danfo",
+      "fare": [
+        400,
+        600
+      ],
+      "duration": [
+        35,
+        70
+      ],
+      "via": [
+        "Ikeja",
+        "Iyana Ipaja"
+      ],
+      "board": "Oshodi under-bridge — buses shouting 'Abule Egba!'",
+      "boardReverse": "Abule Egba bus stop (under the flyover)"
+    },
+    {
+      "from": "Surulere",
+      "to": "CMS",
+      "mode": "danfo",
+      "fare": [
+        300,
+        600
+      ],
+      "duration": [
+        30,
+        60
+      ],
+      "via": [
+        "Costain"
+      ],
+      "board": "Surulere bus stop (Shitta, Adeniran Ogunsanya Street)",
+      "boardReverse": "CMS bus stop (Marina side)"
+    },
+    {
+      "from": "Oshodi",
+      "to": "Mile 2",
+      "mode": "danfo",
+      "fare": [
+        400,
+        600
+      ],
+      "duration": [
+        30,
+        60
+      ],
+      "via": [
+        "Cele"
+      ],
+      "board": "Oshodi under-bridge — buses shouting 'Mile 2!'",
+      "boardReverse": "Mile 2 motor park",
+      "notes": "Along the Apapa–Oshodi Expressway."
+    },
+    {
+      "from": "Mile 2",
+      "to": "Festac",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        25
+      ],
+      "board": "Mile 2 motor park",
+      "boardReverse": "Festac first-gate bus stop"
+    },
+    {
+      "from": "Badagry",
+      "to": "Mile 2",
+      "mode": "danfo",
+      "fare": [
+        600,
+        1000
+      ],
+      "duration": [
+        60,
+        120
+      ],
+      "via": [
+        "Festac"
+      ],
+      "board": "Badagry Roundabout motor park",
+      "boardReverse": "Mile 2 motor park"
+    },
+    {
+      "from": "Maryland",
+      "to": "Yaba",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        45
+      ],
+      "via": [
+        "Anthony",
+        "Fadeyi"
+      ],
+      "board": "Maryland bus stop (Ikorodu Road)",
+      "boardReverse": "Yaba bus stop on Herbert Macaulay Way"
+    },
+    {
+      "from": "Oshodi",
+      "to": "Ikotun",
+      "mode": "danfo",
+      "fare": [
+        400,
+        600
+      ],
+      "duration": [
+        30,
+        60
+      ],
+      "board": "Oshodi under-bridge — buses shouting 'Ikotun!'",
+      "boardReverse": "Ikotun roundabout bus stop",
+      "notes": "Via Isolo; slow at peak."
+    },
+    {
+      "from": "Iyana Ipaja",
+      "to": "Ikotun",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        45
+      ],
+      "via": [
+        "Egbeda"
+      ],
+      "board": "Iyana Ipaja bus stop (under the bridge)",
+      "boardReverse": "Ikotun roundabout bus stop"
     }
   ],
+  "tips": [
+    "Cowry card: needed for BRT, Blue Line, Red Line and LAGFERRY. Buy one at any BRT terminal or rail station (about ₦600–₦1,000) and top up ₦100–₦5,000.",
+    "Danfo: pay the conductor in cash, ideally exact change, and confirm the destination the conductor is shouting before you board.",
+    "Rush hours: 6–9am towards the Island and 4–8pm back to the mainland — add 30–60 minutes.",
+    "Last mile: keke costs about ₦200–₦800 depending on distance. Okada is banned on major roads in many Lagos LGAs."
+  ],
   "phrases": {
-    "yo": { "greeting": "Bawo ni", "thanks": "E se" },
-    "ig": { "greeting": "Kedu", "thanks": "Daalu" },
-    "ha": { "greeting": "Sannu", "thanks": "Na gode" }
+    "yo": {
+      "greeting": "Bawo ni",
+      "thanks": "E se"
+    },
+    "ig": {
+      "greeting": "Kedu",
+      "thanks": "Daalu"
+    },
+    "ha": {
+      "greeting": "Sannu",
+      "thanks": "Na gode"
+    }
   }
 }

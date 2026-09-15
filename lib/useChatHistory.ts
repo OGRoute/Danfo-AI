@@ -1,11 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { LangCode } from "./language-detect";
+import type { TripPlan } from "./route-planner";
 
 export interface Msg {
   role: "user" | "assistant";
   content: string;
   verified?: boolean;
+  /** The computed trip behind an assistant reply (drives the trip card + map). */
+  plan?: TripPlan | null;
+  /** Language the reply was written in (drives text-to-speech). */
+  language?: LangCode;
+  /** "planner" when the reply is the computed answer rather than model text. */
+  source?: "model" | "planner";
+  /** Shown under the reply, e.g. why it is in English. */
+  note?: string;
 }
 
 export interface Conversation {
