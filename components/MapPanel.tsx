@@ -20,10 +20,25 @@ interface Props {
   stops: string[];
   /** Live GPS position updates, so chat can plan from where the rider is. */
   onPosition?: (pos: LatLng) => void;
+  /** Ask for GPS as soon as the map opens (rider preference). */
+  liveLocation?: boolean;
+  /** Keep the map centred on the rider (rider preference). */
+  followMe?: boolean;
+  /** Force map colours instead of following the theme. */
+  mapStyle?: "auto" | "light" | "dark";
 }
 
 /** Full-screen live map: the planned route on real roads plus your position. */
-export default function MapPanel({ open, onClose, plan, stops, onPosition }: Props) {
+export default function MapPanel({
+  open,
+  onClose,
+  plan,
+  stops,
+  onPosition,
+  liveLocation,
+  followMe,
+  mapStyle,
+}: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -53,7 +68,14 @@ export default function MapPanel({ open, onClose, plan, stops, onPosition }: Pro
       </header>
 
       <div className="map-body">
-        <RouteMap itineraries={itineraries} stops={stops} onPosition={onPosition} />
+        <RouteMap
+          itineraries={itineraries}
+          stops={stops}
+          onPosition={onPosition}
+          liveLocation={liveLocation}
+          followMe={followMe}
+          mapStyle={mapStyle}
+        />
       </div>
 
       <style jsx>{`

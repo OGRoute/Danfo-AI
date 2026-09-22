@@ -1,6 +1,7 @@
 "use client";
 
 import { ClerkAuthProvider, LocalAuthProvider } from "../lib/useAuth";
+import { SettingsProvider } from "../lib/useSettings";
 
 /**
  * Client-side context providers, mounted once around the whole app.
@@ -14,7 +15,8 @@ export default function Providers({
   children: React.ReactNode;
   clerk: boolean;
 }) {
-  if (clerk) return <ClerkAuthProvider>{children}</ClerkAuthProvider>;
+  const withSettings = <SettingsProvider>{children}</SettingsProvider>;
+  if (clerk) return <ClerkAuthProvider>{withSettings}</ClerkAuthProvider>;
   // No Clerk → wallet + anonymous only.
-  return <LocalAuthProvider>{children}</LocalAuthProvider>;
+  return <LocalAuthProvider>{withSettings}</LocalAuthProvider>;
 }

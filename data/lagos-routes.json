@@ -1,9 +1,9 @@
 {
-  "version": 2,
-  "updatedAt": "2026-09-14",
+  "version": 3,
+  "updatedAt": "2026-09-22",
   "currency": "NGN",
-  "note": "Knowledge base for DanfoAI. Community corrections on 0G Chain keep it current.",
-  "fareNote": "2026 fare estimates compiled from LAMATA's published BRT and rail fares and rider-reported danfo fares. Danfo fares rise at rush hour, in rain and during fuel scarcity. BRT, Blue Line, Red Line and LAGFERRY are cashless — pay with a Cowry card.",
+  "note": "Knowledge base for DanfoAI: LAMATA BRT and rail plus the local danfo, korope, keke and ferry network riders actually use. Community corrections on 0G Chain keep it current.",
+  "fareNote": "2026 fare estimates: LAMATA's published BRT and rail fares, and rider-reported danfo/keke/ferry fares. Local fares rise at rush hour, in rain and during fuel scarcity, and conductors round up. BRT, Blue Line, Red Line and LAGFERRY are cashless — pay with a Cowry card; danfo, korope and keke are cash.",
   "stops": [
     "Ikorodu",
     "Owode Onirin",
@@ -47,7 +47,49 @@
     "Surulere",
     "Cele",
     "Ikotun",
-    "Egbeda"
+    "Egbeda",
+    "Chevron",
+    "VGC",
+    "Abraham Adesanya",
+    "Sangotedo",
+    "Awoyaya",
+    "Eputu",
+    "Lakowe",
+    "Ibeju-Lekki",
+    "Epe",
+    "Badore",
+    "Ijede",
+    "Idumota",
+    "Ebute Ero",
+    "Ijora",
+    "Apapa",
+    "Palmgrove",
+    "Isolo",
+    "Ejigbo",
+    "Igando",
+    "Ogba",
+    "Bariga",
+    "Oworonshoki",
+    "Gbagada",
+    "Agric",
+    "Imota",
+    "Alakija",
+    "Agboju",
+    "Satellite Town",
+    "Trade Fair",
+    "Iyana Iba",
+    "Alaba",
+    "Okokomaiko",
+    "Agbara",
+    "Ojodu",
+    "Akute",
+    "Arepo",
+    "Magboro",
+    "Ibafo",
+    "Mowe",
+    "Redemption Camp",
+    "Sango Ota",
+    "Ifo"
   ],
   "routes": [
     {
@@ -954,13 +996,1036 @@
       ],
       "board": "Iyana Ipaja bus stop (under the bridge)",
       "boardReverse": "Ikotun roundabout bus stop"
+    },
+    {
+      "from": "CMS",
+      "to": "Obalende",
+      "mode": "danfo",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        8,
+        20
+      ],
+      "board": "CMS bus stop on Marina — conductors shout 'Obalende!'",
+      "boardReverse": "Obalende under-bridge park",
+      "notes": "Short hop across Lagos Island. Pay the conductor in cash — have change ready."
+    },
+    {
+      "from": "Obalende",
+      "to": "Victoria Island",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Obalende under-bridge park — buses shouting 'VI! Falomo!'",
+      "boardReverse": "Ozumba Mbadiwe Avenue bus stop, Victoria Island",
+      "notes": "Along Falomo bridge and Ozumba Mbadiwe. Heavy 7–10am towards VI."
+    },
+    {
+      "from": "Victoria Island",
+      "to": "Ajah",
+      "mode": "danfo",
+      "fare": [
+        600,
+        900
+      ],
+      "duration": [
+        45,
+        110
+      ],
+      "via": [
+        "Lekki Phase 1",
+        "Chevron",
+        "VGC"
+      ],
+      "board": "Ozumba Mbadiwe Avenue bus stop — buses shouting 'Ajah!'",
+      "boardReverse": "Ajah under-bridge park",
+      "notes": "Lekki–Epe Expressway. Tolls and evening traffic add time."
+    },
+    {
+      "from": "Lekki Phase 1",
+      "to": "Ajah",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        60
+      ],
+      "via": [
+        "Chevron",
+        "VGC"
+      ],
+      "board": "Lekki Phase 1 first-gate bus stop",
+      "boardReverse": "Ajah under-bridge park",
+      "notes": "Along Lekki–Epe Expressway."
+    },
+    {
+      "from": "Ajah",
+      "to": "Sangotedo",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "via": [
+        "Abraham Adesanya"
+      ],
+      "board": "Ajah under-bridge park — buses shouting 'Sangotedo! Shoprite!'",
+      "boardReverse": "Sangotedo (Novare Mall) bus stop"
+    },
+    {
+      "from": "Sangotedo",
+      "to": "Awoyaya",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Sangotedo bus stop on Lekki–Epe Expressway",
+      "boardReverse": "Awoyaya bus stop"
+    },
+    {
+      "from": "Awoyaya",
+      "to": "Eputu",
+      "mode": "danfo",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        20
+      ],
+      "board": "Awoyaya bus stop",
+      "boardReverse": "Eputu/Bogije bus stop"
+    },
+    {
+      "from": "Eputu",
+      "to": "Lakowe",
+      "mode": "danfo",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        8,
+        20
+      ],
+      "board": "Eputu bus stop",
+      "boardReverse": "Lakowe bus stop"
+    },
+    {
+      "from": "Lakowe",
+      "to": "Ibeju-Lekki",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        15,
+        40
+      ],
+      "board": "Lakowe bus stop",
+      "boardReverse": "Akodo/Ibeju bus stop"
+    },
+    {
+      "from": "Ibeju-Lekki",
+      "to": "Epe",
+      "mode": "danfo",
+      "fare": [
+        500,
+        900
+      ],
+      "duration": [
+        40,
+        80
+      ],
+      "board": "Akodo/Ibeju bus stop on Lekki–Epe Expressway",
+      "boardReverse": "Epe motor park",
+      "notes": "Long stretch; buses fill up before leaving."
+    },
+    {
+      "from": "Ajah",
+      "to": "Badore",
+      "mode": "keke",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        10,
+        25
+      ],
+      "board": "Ajah under-bridge keke stand — ask for 'Badore jetty'",
+      "boardReverse": "Keke stand at Badore Ferry Terminal",
+      "notes": "Feeder route to the Badore jetty."
+    },
+    {
+      "from": "Badore",
+      "to": "Ijede",
+      "mode": "ferry",
+      "fare": [
+        1500,
+        2500
+      ],
+      "duration": [
+        30,
+        50
+      ],
+      "line": "LAGFERRY / licensed boats",
+      "wait": 20,
+      "board": "Badore Ferry Terminal — life jacket is compulsory",
+      "boardReverse": "Ijede Ferry Terminal, Ikorodu",
+      "notes": "Crosses the lagoon to Ikorodu; skips the whole Lekki–Ikorodu road trip. Boats stop at dusk."
+    },
+    {
+      "from": "Marina",
+      "to": "Mile 2",
+      "mode": "ferry",
+      "fare": [
+        1000,
+        1500
+      ],
+      "duration": [
+        25,
+        40
+      ],
+      "line": "LAGFERRY",
+      "wait": 20,
+      "board": "Marina Ferry Terminal (CMS)",
+      "boardReverse": "Mile 2 Ferry Terminal",
+      "notes": "Water alternative to the Apapa road."
+    },
+    {
+      "from": "Idumota",
+      "to": "CMS",
+      "mode": "keke",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        20
+      ],
+      "board": "Idumota keke stand, Lagos Island",
+      "boardReverse": "CMS bus stop on Marina",
+      "notes": "Island market run; okada is banned here."
+    },
+    {
+      "from": "Ebute Ero",
+      "to": "Idumota",
+      "mode": "keke",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        15
+      ],
+      "board": "Ebute Ero market keke stand",
+      "boardReverse": "Idumota keke stand"
+    },
+    {
+      "from": "Marina",
+      "to": "Apapa",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        45
+      ],
+      "via": [
+        "Ijora"
+      ],
+      "board": "CMS/Marina bus stop — buses shouting 'Apapa!'",
+      "boardReverse": "Apapa (Wharf Road) bus stop",
+      "notes": "Container traffic around Apapa can stall this road."
+    },
+    {
+      "from": "Oshodi",
+      "to": "Mushin",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Oshodi under-bridge — buses shouting 'Mushin!'",
+      "boardReverse": "Mushin (Agege Motor Road) bus stop",
+      "notes": "Along Agege Motor Road."
+    },
+    {
+      "from": "Mushin",
+      "to": "Yaba",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        45
+      ],
+      "via": [
+        "Palmgrove",
+        "Fadeyi"
+      ],
+      "board": "Mushin bus stop on Agege Motor Road",
+      "boardReverse": "Yaba bus stop on Herbert Macaulay Way"
+    },
+    {
+      "from": "Oshodi",
+      "to": "Isolo",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Oshodi under-bridge — buses shouting 'Isolo! Okota!'",
+      "boardReverse": "Isolo/Okota bus stop",
+      "notes": "Along Osolo Way."
+    },
+    {
+      "from": "Isolo",
+      "to": "Ejigbo",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Isolo bus stop",
+      "boardReverse": "Ejigbo bus stop"
+    },
+    {
+      "from": "Ejigbo",
+      "to": "Ikotun",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Ejigbo bus stop",
+      "boardReverse": "Ikotun roundabout bus stop"
+    },
+    {
+      "from": "Ikotun",
+      "to": "Igando",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Ikotun roundabout — buses shouting 'Igando!'",
+      "boardReverse": "Igando bus stop"
+    },
+    {
+      "from": "Igando",
+      "to": "Iyana Ipaja",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        45
+      ],
+      "via": [
+        "Egbeda"
+      ],
+      "board": "Igando bus stop",
+      "boardReverse": "Iyana Ipaja under-bridge",
+      "notes": "Along the Lagos–Abeokuta service lane at the Iyana Ipaja end."
+    },
+    {
+      "from": "Oshodi",
+      "to": "Ikeja",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        15,
+        35
+      ],
+      "via": [
+        "Bolade"
+      ],
+      "board": "Oshodi under-bridge — buses shouting 'Ikeja!'",
+      "boardReverse": "Ikeja Under Bridge bus stop",
+      "notes": "Along Agege Motor Road; danfo alternative to the BRT."
+    },
+    {
+      "from": "Ikeja",
+      "to": "Ogba",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Ikeja Under Bridge bus stop — buses shouting 'Ogba!'",
+      "boardReverse": "Ogba (Ijaiye) bus stop"
+    },
+    {
+      "from": "Ogba",
+      "to": "Agege",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Ogba bus stop",
+      "boardReverse": "Agege Pen Cinema bus stop"
+    },
+    {
+      "from": "Agege",
+      "to": "Abule Egba",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Agege Pen Cinema bus stop",
+      "boardReverse": "Abule Egba bus stop under the flyover"
+    },
+    {
+      "from": "Iyana Ipaja",
+      "to": "Abule Egba",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Iyana Ipaja under-bridge",
+      "boardReverse": "Abule Egba bus stop",
+      "notes": "Along the Lagos–Abeokuta Expressway."
+    },
+    {
+      "from": "Yaba",
+      "to": "Bariga",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Yaba bus stop — buses shouting 'Bariga! Akoka!'",
+      "boardReverse": "Bariga bus stop"
+    },
+    {
+      "from": "Bariga",
+      "to": "Oworonshoki",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        25
+      ],
+      "board": "Bariga bus stop",
+      "boardReverse": "Oworonshoki bus stop"
+    },
+    {
+      "from": "Oworonshoki",
+      "to": "Ketu",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        15,
+        40
+      ],
+      "board": "Oworonshoki bus stop by the Third Mainland Bridge ramp",
+      "boardReverse": "Ketu bus stop on Ikorodu Road"
+    },
+    {
+      "from": "Gbagada",
+      "to": "Anthony",
+      "mode": "danfo",
+      "fare": [
+        200,
+        350
+      ],
+      "duration": [
+        8,
+        25
+      ],
+      "board": "Gbagada expressway bus stop",
+      "boardReverse": "Anthony Village bus stop"
+    },
+    {
+      "from": "Maryland",
+      "to": "Ojota",
+      "mode": "danfo",
+      "fare": [
+        200,
+        350
+      ],
+      "duration": [
+        8,
+        25
+      ],
+      "board": "Maryland bus stop (Ikorodu Road)",
+      "boardReverse": "Ojota bus stop (new garage)"
+    },
+    {
+      "from": "Ojota",
+      "to": "Ketu",
+      "mode": "danfo",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        20
+      ],
+      "board": "Ojota bus stop",
+      "boardReverse": "Ketu bus stop"
+    },
+    {
+      "from": "Ketu",
+      "to": "Mile 12",
+      "mode": "danfo",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        20
+      ],
+      "board": "Ketu bus stop on Ikorodu Road",
+      "boardReverse": "Mile 12 bus stop by the market"
+    },
+    {
+      "from": "Ojuelegba",
+      "to": "Yaba",
+      "mode": "danfo",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        8,
+        25
+      ],
+      "board": "Ojuelegba under-bridge bus stop",
+      "boardReverse": "Yaba bus stop on Herbert Macaulay Way"
+    },
+    {
+      "from": "Surulere",
+      "to": "Ojuelegba",
+      "mode": "keke",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        20
+      ],
+      "board": "Shitta/Adeniran Ogunsanya keke stand, Surulere",
+      "boardReverse": "Ojuelegba under-bridge keke stand"
+    },
+    {
+      "from": "Yaba",
+      "to": "Oyingbo",
+      "mode": "keke",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        20
+      ],
+      "board": "Yaba (Tejuosho) keke stand",
+      "boardReverse": "Oyingbo market keke stand"
+    },
+    {
+      "from": "Costain",
+      "to": "Apapa",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        15,
+        45
+      ],
+      "via": [
+        "Ijora"
+      ],
+      "board": "Costain bus stop",
+      "boardReverse": "Apapa (Wharf Road) bus stop"
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Agric",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "board": "Ikorodu Garage — buses shouting 'Agric!'",
+      "boardReverse": "Agric bus stop, Ikorodu Road"
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Ijede",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        45
+      ],
+      "board": "Ikorodu Garage — buses shouting 'Ijede!'",
+      "boardReverse": "Ijede motor park"
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Imota",
+      "mode": "danfo",
+      "fare": [
+        400,
+        600
+      ],
+      "duration": [
+        25,
+        55
+      ],
+      "board": "Ikorodu Garage — buses shouting 'Imota!'",
+      "boardReverse": "Imota motor park"
+    },
+    {
+      "from": "Mile 2",
+      "to": "Satellite Town",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "via": [
+        "Alakija",
+        "Agboju"
+      ],
+      "board": "Mile 2 motor park — buses shouting 'Satellite!'",
+      "boardReverse": "Satellite Town bus stop",
+      "notes": "Along the Lagos–Badagry Expressway service lane."
+    },
+    {
+      "from": "Mile 2",
+      "to": "Iyana Iba",
+      "mode": "danfo",
+      "fare": [
+        400,
+        600
+      ],
+      "duration": [
+        25,
+        60
+      ],
+      "via": [
+        "Alakija",
+        "Trade Fair"
+      ],
+      "board": "Mile 2 motor park — buses shouting 'Iyana Iba! Iba!'",
+      "boardReverse": "Iyana Iba bus stop",
+      "notes": "Road works on the Badagry Expressway slow this badly at peak."
+    },
+    {
+      "from": "Iyana Iba",
+      "to": "Okokomaiko",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        30
+      ],
+      "via": [
+        "Alaba"
+      ],
+      "board": "Iyana Iba bus stop",
+      "boardReverse": "Okokomaiko bus stop"
+    },
+    {
+      "from": "Okokomaiko",
+      "to": "Agbara",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        45
+      ],
+      "board": "Okokomaiko bus stop",
+      "boardReverse": "Agbara roundabout park"
+    },
+    {
+      "from": "Agbara",
+      "to": "Badagry",
+      "mode": "danfo",
+      "fare": [
+        500,
+        800
+      ],
+      "duration": [
+        35,
+        70
+      ],
+      "board": "Agbara roundabout park",
+      "boardReverse": "Badagry roundabout motor park"
+    },
+    {
+      "from": "Festac",
+      "to": "Satellite Town",
+      "mode": "keke",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        20
+      ],
+      "board": "Festac first-gate keke stand",
+      "boardReverse": "Satellite Town keke stand"
+    },
+    {
+      "from": "Mile 2",
+      "to": "Alaba",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        50
+      ],
+      "via": [
+        "Trade Fair",
+        "Iyana Iba"
+      ],
+      "board": "Mile 2 motor park — buses shouting 'Alaba!'",
+      "boardReverse": "Alaba International Market bus stop",
+      "notes": "Market traffic is worst on weekends."
+    },
+    {
+      "from": "Berger",
+      "to": "Ojodu",
+      "mode": "keke",
+      "fare": [
+        200,
+        300
+      ],
+      "duration": [
+        5,
+        20
+      ],
+      "board": "Berger keke stand, Ojodu-Berger",
+      "boardReverse": "Ojodu Grammar School keke stand"
+    },
+    {
+      "from": "Berger",
+      "to": "Akute",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        50
+      ],
+      "board": "Berger bus stop — buses shouting 'Akute! Ajuwon!'",
+      "boardReverse": "Akute motor park",
+      "notes": "Narrow road; very slow 6–9am."
+    },
+    {
+      "from": "Berger",
+      "to": "Arepo",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        15,
+        40
+      ],
+      "board": "Berger bus stop on the Lagos–Ibadan Expressway service lane",
+      "boardReverse": "Arepo bus stop"
+    },
+    {
+      "from": "Arepo",
+      "to": "Magboro",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        8,
+        25
+      ],
+      "board": "Arepo bus stop",
+      "boardReverse": "Magboro bus stop"
+    },
+    {
+      "from": "Magboro",
+      "to": "Ibafo",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        8,
+        25
+      ],
+      "board": "Magboro bus stop",
+      "boardReverse": "Ibafo bus stop"
+    },
+    {
+      "from": "Ibafo",
+      "to": "Mowe",
+      "mode": "danfo",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        8,
+        25
+      ],
+      "board": "Ibafo bus stop",
+      "boardReverse": "Mowe bus stop"
+    },
+    {
+      "from": "Mowe",
+      "to": "Redemption Camp",
+      "mode": "keke",
+      "fare": [
+        200,
+        400
+      ],
+      "duration": [
+        10,
+        25
+      ],
+      "board": "Mowe bus stop keke stand — ask for 'Redemption Camp'",
+      "boardReverse": "Redemption Camp gate keke stand",
+      "notes": "Very busy on Holy Ghost Service weekends."
+    },
+    {
+      "from": "Abule Egba",
+      "to": "Sango Ota",
+      "mode": "danfo",
+      "fare": [
+        300,
+        600
+      ],
+      "duration": [
+        20,
+        60
+      ],
+      "board": "Abule Egba bus stop — buses shouting 'Sango!'",
+      "boardReverse": "Sango Ota park by the bridge",
+      "notes": "Along the Lagos–Abeokuta Expressway."
+    },
+    {
+      "from": "Sango Ota",
+      "to": "Ifo",
+      "mode": "danfo",
+      "fare": [
+        300,
+        500
+      ],
+      "duration": [
+        20,
+        50
+      ],
+      "board": "Sango Ota park",
+      "boardReverse": "Ifo motor park"
+    },
+    {
+      "from": "Ajah",
+      "to": "Epe",
+      "mode": "danfo",
+      "fare": [
+        1000,
+        1500
+      ],
+      "duration": [
+        70,
+        130
+      ],
+      "via": [
+        "Sangotedo",
+        "Awoyaya",
+        "Eputu",
+        "Lakowe",
+        "Ibeju-Lekki"
+      ],
+      "board": "Ajah under-bridge park — buses shouting 'Epe!'",
+      "boardReverse": "Epe motor park",
+      "notes": "Long run down the Lekki–Epe Expressway; buses leave when full."
+    },
+    {
+      "from": "Berger",
+      "to": "Mowe",
+      "mode": "danfo",
+      "fare": [
+        500,
+        800
+      ],
+      "duration": [
+        35,
+        80
+      ],
+      "via": [
+        "Arepo",
+        "Magboro",
+        "Ibafo"
+      ],
+      "board": "Berger bus stop on the Lagos–Ibadan Expressway service lane — buses shouting 'Mowe! Ibafo!'",
+      "boardReverse": "Mowe bus stop on the Lagos–Ibadan Expressway",
+      "notes": "Ogun commuter run; very heavy 5–8am towards Lagos."
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Epe",
+      "mode": "danfo",
+      "fare": [
+        900,
+        1400
+      ],
+      "duration": [
+        70,
+        140
+      ],
+      "via": [
+        "Agric",
+        "Imota"
+      ],
+      "board": "Ikorodu Garage — buses shouting 'Epe!'",
+      "boardReverse": "Epe motor park",
+      "notes": "Ikorodu–Epe road; fewer buses after dark."
+    },
+    {
+      "from": "Ikeja",
+      "to": "Sango Ota",
+      "mode": "danfo",
+      "fare": [
+        500,
+        900
+      ],
+      "duration": [
+        35,
+        90
+      ],
+      "via": [
+        "Agege",
+        "Abule Egba"
+      ],
+      "board": "Ikeja Under Bridge bus stop — buses shouting 'Sango!'",
+      "boardReverse": "Sango Ota park by the bridge",
+      "notes": "Along the Lagos–Abeokuta Expressway."
     }
   ],
   "tips": [
     "Cowry card: needed for BRT, Blue Line, Red Line and LAGFERRY. Buy one at any BRT terminal or rail station (about ₦600–₦1,000) and top up ₦100–₦5,000.",
-    "Danfo: pay the conductor in cash, ideally exact change, and confirm the destination the conductor is shouting before you board.",
+    "Danfo and korope: pay the conductor in cash, ideally exact change, and confirm the destination the conductor is shouting before you board.",
     "Rush hours: 6–9am towards the Island and 4–8pm back to the mainland — add 30–60 minutes.",
-    "Last mile: keke costs about ₦200–₦800 depending on distance. Okada is banned on major roads in many Lagos LGAs."
+    "Last mile: keke costs about ₦200–₦800 depending on distance. Okada is banned on major roads in many Lagos LGAs, so plan on keke or walking.",
+    "Keep your phone and bag out of sight at under-bridge parks, and avoid empty buses that won't tell you the route — that's how 'one chance' works."
   ],
   "phrases": {
     "yo": {

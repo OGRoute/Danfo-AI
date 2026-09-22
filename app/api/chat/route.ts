@@ -3,7 +3,8 @@ import { danfoChat, discoverProvider } from "../../../lib/zg-compute";
 import { loadRouteKB } from "../../../lib/routes-kb";
 import { buildSystemPrompt, replyKeepsFacts } from "../../../lib/prompt";
 import { composeAnswer } from "../../../lib/compose-answer";
-import { planTrip } from "../../../lib/route-planner";
+import { extractPlacePhrases, planTrip } from "../../../lib/route-planner";
+import { resolveEndpoint } from "../../../lib/geocode";
 import { detectLanguage, isLangCode, type LangCode } from "../../../lib/language-detect";
 import { isTimeoutError } from "../../../lib/zg-provider";
 import type { LatLng } from "../../../lib/lagos-stops";
@@ -67,7 +68,23 @@ export async function POST(req: NextRequest) {
     const { kb, source } = await loadRouteKB();
 
     const userTexts = messages.filter((m) => m.role === "user").map((m) => m.content);
-    const plan = planTrip(kb, userTexts, asLatLng(body.location));
+    const location = asLatLng(body.location);
+    let plan = planTrip(kb, userTexts, location);
+
+    // Streets, estates, markets and landmarks the route database doesn't know:
+    // resolve them on OpenStreetMap and walk the rider to the nearest stop
+    // that actually has routes.
+    if (!plan.best) {
+      const latest = userTexts[userTexts.length - 1] ?? "";
+      const phrases = extractPlacePhrases(latest);
+      const [origin, destination] = await Promise.all([
+        !plan.origin && phrases.origin ? resolveEndpoint(phrases.origin) : null,
+        !plan.destination && phrases.destination ? resolveEndpoint(phrases.destination) : null,
+      ]);
+      if (origin || destination) {
+        plan = planTrip(kb, userTexts, location, { origin, destination });
+      }
+    }
     const language: LangCode = isLangCode(body.language)
       ? body.language
       : detectLanguage(userTexts[userTexts.length - 1] ?? "").code;

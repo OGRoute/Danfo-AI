@@ -30,6 +30,11 @@ export interface TripLeg {
   alight: string;
   /** The line's final stop, when boarding part-way along it ("the one heading to Ajah"). */
   towards?: string;
+  /** Coordinates for legs whose ends aren't named stops (walking to a street). */
+  fromPos?: LatLng;
+  toPos?: LatLng;
+  /** Distance in km, set on walking / keke access legs. */
+  km?: number;
   /** Ordered stops travelled through, from → to (drawn on the map). */
   path: string[];
   /** True when the fare is pro-rated for part of a line rather than published. */
@@ -45,6 +50,15 @@ export interface Itinerary {
   duration?: [number, number];
 }
 
+/** A place the rider named that isn't a stop, resolved to the network. */
+export interface ResolvedPlace {
+  label: string;
+  pos: LatLng;
+  /** Nearest stop with routes. */
+  stop: string;
+  km: number;
+}
+
 export interface TripPlan {
   origin: string | null;
   destination: string | null;
@@ -54,6 +68,8 @@ export interface TripPlan {
   substitutions: Array<{ requested: string; used: string; km: number }>;
   best: Itinerary | null;
   alternatives: Itinerary[];
+  /** Streets/landmarks resolved via OpenStreetMap for this trip. */
+  places?: { origin?: ResolvedPlace | null; destination?: ResolvedPlace | null };
 }
 
 export function formatNaira([lo, hi]: [number, number]): string {
@@ -80,7 +96,7 @@ const TRANSFER_PENALTY = 250;
 const MINUTE_COST = 8;
 // Slight preference for published end-to-end fares over pro-rated sections.
 const ESTIMATE_PENALTY = 40;
-const MAX_LEGS = 4;
+const MAX_LEGS = 5;
 // How far a named place may be from a served stop before we give up on it.
 const SNAP_KM = 4;
 
@@ -307,6 +323,72 @@ function toItinerary(edges: Edge[]): Itinerary {
   };
 }
 
+// Below this, a rider just walks to the stop instead of it being a "leg".
+const ACCESS_MIN_KM = 0.35;
+// Further than this and a keke/okada makes more sense than walking.
+const WALK_MAX_KM = 1.2;
+
+/** Walking or keke hop between a named place and the stop that serves it. */
+function accessLeg(place: ResolvedPlace, toStop: boolean): TripLeg {
+  const walk = place.km <= WALK_MAX_KM;
+  const minutes = walk
+    ? Math.max(3, Math.round(place.km * 13))
+    : Math.max(5, Math.round(place.km * 4));
+  const fare: [number, number] = walk ? [0, 0] : [200, Math.max(300, round50(place.km * 150))];
+  const stopPos = LAGOS_STOPS[place.stop];
+  const from = toStop ? place.label : place.stop;
+  const to = toStop ? place.stop : place.label;
+  return {
+    from,
+    to,
+    mode: walk ? "walk" : "keke",
+    fare,
+    duration: [minutes, Math.round(minutes * 1.6)],
+    board: from,
+    alight: to,
+    path: [from, to],
+    fromPos: toStop ? place.pos : stopPos,
+    toPos: toStop ? stopPos : place.pos,
+    km: place.km,
+    estimated: true,
+  };
+}
+
+/** Add the walk/keke legs that get the rider to and from the mapped network. */
+function withAccessLegs(it: Itinerary, places?: TripPlan["places"]): Itinerary {
+  const legs = [...it.legs];
+  const origin = places?.origin;
+  const destination = places?.destination;
+  if (origin && origin.km >= ACCESS_MIN_KM && legs[0]?.from === origin.stop) {
+    legs.unshift(accessLeg(origin, true));
+  }
+  if (destination && destination.km >= ACCESS_MIN_KM && legs[legs.length - 1]?.to === destination.stop) {
+    legs.push(accessLeg(destination, false));
+  }
+  if (legs.length === it.legs.length) {
+    // No access legs, but still show the rider's own words for the endpoints.
+    return {
+      ...it,
+      from: origin?.label ?? it.from,
+      to: destination?.label ?? it.to,
+    };
+  }
+  const timed = legs.every((l) => l.duration);
+  const transfers = Math.max(0, legs.length - 1);
+  return {
+    from: legs[0].from,
+    to: legs[legs.length - 1].to,
+    legs,
+    fare: [legs.reduce((s, l) => s + l.fare[0], 0), legs.reduce((s, l) => s + l.fare[1], 0)],
+    duration: timed
+      ? [
+          legs.reduce((s, l) => s + l.duration![0], 0) + transfers * 5,
+          legs.reduce((s, l) => s + l.duration![1], 0) + transfers * 10,
+        ]
+      : undefined,
+  };
+}
+
 const pathCost = (edges: Edge[]) => edges.reduce((s, e) => s + e.cost, 0);
 const signature = (edges: Edge[]) =>
   edges.map((e) => `${e.from}>${e.to}:${e.route.mode}`).join("|");
@@ -413,15 +495,75 @@ export function parseTrip(text: string): { origin: string | null; destination: s
   return { origin, destination };
 }
 
+// Letters used across the five languages, for pulling a place name out of text.
+// Letters, digits and the punctuation street names use. The hyphen must stay
+// last so it isn't read as a character range.
+const PLACE_CHARS = "A-Za-z0-9ÀÁÂÈÉÊÌÍÒÓÔÙÚÛàáâèéêìíòóôùúûẸẹỌọṢṣỊịỤụŃńǸǹƙɗɓƴ'’. /-";
+const ORIGIN_PHRASE = new RegExp(
+  `(?:\\bfrom\\b|\\blati\\b|\\bláti\\b|\\bdaga\\b|\\bsite na\\b|\\bi dey\\b|\\bdey for\\b|\\bcomot (?:for|from)\\b)\\s+([${PLACE_CHARS}]{3,45})`,
+  "i"
+);
+const DEST_PHRASE = new RegExp(
+  `(?:\\bto\\b|\\bgo\\b|\\bsi\\b|\\bsí\\b|\\bgaa\\b|\\bzuwa\\b|\\breach\\b|\\bget to\\b)\\s+([${PLACE_CHARS}]{3,45})`,
+  "i"
+);
+// Words that end a place name ("from Allen Avenue to Ajah" → "Allen Avenue").
+const PHRASE_END = /\s+(?:to|from|go|si|sí|lati|láti|daga|zuwa|gaa|reach|abeg|please|by|for|na)\b.*$/i;
+
+function cleanPhrase(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const phrase = raw
+    .replace(PHRASE_END, "")
+    .replace(/[?!.,;]+$/, "")
+    .trim();
+  return phrase.length >= 3 ? phrase : null;
+}
+
+/**
+ * Street names and landmarks the rider mentioned, for places the route
+ * database doesn't know. Fed to the geocoder by the chat route.
+ */
+export function extractPlacePhrases(text: string): { origin: string | null; destination: string | null } {
+  let origin = cleanPhrase(ORIGIN_PHRASE.exec(text)?.[1]);
+  const destination = cleanPhrase(DEST_PHRASE.exec(text)?.[1]);
+
+  // "Allen Avenue to Ajah" — no "from", so whatever precedes "to" is the start.
+  if (!origin && destination) {
+    const before = text.split(/\b(?:to|si|sí|gaa|zuwa|go)\b/i)[0];
+    const lead = cleanPhrase(
+      before.replace(/^.*?\b(?:how|abeg|please|i|we|wan|want|dey|na|take|me|get)\b/i, "").trim() || before.trim()
+    );
+    if (lead && lead.split(/\s+/).length <= 6) origin = lead;
+  }
+  // "Allen Avenue" on its own is a destination.
+  if (!origin && !destination) {
+    const bare = cleanPhrase(text.trim());
+    return { origin: null, destination: bare && bare.split(/\s+/).length <= 6 ? bare : null };
+  }
+  return { origin, destination };
+}
+
 /**
  * Plan the trip the conversation is about.
  * @param userTexts the rider's messages, oldest first
  * @param location  the rider's live GPS position, if they shared it
  */
-export function planTrip(kb: RouteKB, userTexts: string[], location?: LatLng | null): TripPlan {
+export function planTrip(
+  kb: RouteKB,
+  userTexts: string[],
+  location?: LatLng | null,
+  places?: TripPlan["places"]
+): TripPlan {
   const graph = graphFor(kb);
   let { origin, destination } = parseTrip(userTexts[userTexts.length - 1] ?? "");
   let originSource: TripPlan["originSource"] = origin ? "text" : null;
+
+  // A street or landmark the rider named, resolved to the stop that serves it.
+  if (places?.origin) {
+    origin = places.origin.stop;
+    originSource = "text";
+  }
+  if (places?.destination) destination = places.destination.stop;
 
   // "How do I get to Ikeja?" with live location on: start from the nearest stop.
   if (!origin && destination && location) {
@@ -452,6 +594,7 @@ export function planTrip(kb: RouteKB, userTexts: string[], location?: LatLng | n
     substitutions: [],
     best: null,
     alternatives: [],
+    places,
   };
   if (!origin || !destination || origin === destination) return plan;
 
@@ -468,8 +611,8 @@ export function planTrip(kb: RouteKB, userTexts: string[], location?: LatLng | n
   }
 
   const { best, alternatives } = planRoute(graph, from.used, to.used);
-  plan.best = best;
-  plan.alternatives = alternatives;
+  plan.best = best ? withAccessLegs(best, places) : null;
+  plan.alternatives = alternatives.map((a) => withAccessLegs(a, places));
   return plan;
 }
 

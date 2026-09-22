@@ -13,16 +13,25 @@ Hausa, Nigerian Pidgin, and English**. No maps, no menus — just talk.
 What's inside:
 
 - **Accurate, detailed routes.** A deterministic trip planner computes every
-  leg — danfo, BRT, Blue/Red Line train, ferry, keke — with boarding point,
-  drop-off, fare and time from a 2026 Lagos route database. The model on 0G
-  Compute phrases that plan in English or Pidgin; a reply that drops or changes
-  a fact is replaced by the computed answer, and Yoruba/Igbo/Hausa trip answers
-  are shown in English until 0G offers a stronger model. Each reply comes with a
-  trip card showing the same plan.
+  leg — danfo, korope, BRT, Blue/Red Line train, ferry, keke — with boarding
+  point, drop-off, fare and time from a 2026 Lagos route database of 108
+  routes and 85 stops, weighted towards the local network riders actually use
+  (77 danfo routes) rather than only LAMATA services. Answers are written from
+  that plan in the rider's own language (English, Pidgin, Yoruba, Igbo or
+  Hausa); the model on 0G Compute rephrases the English ones, and any reply
+  that drops or changes a fact is replaced by the computed answer. Each reply
+  comes with a trip card showing the same plan.
 - **Voice in your language (Intron).** Speech-to-text for English, Pidgin,
   Yoruba, Igbo and Hausa, with auto-detect, that keeps listening until you tap
   stop. Replies are read aloud with Intron's native voices. Without an Intron
   key it falls back to local Whisper / the browser (English).
+- **Any street, estate or landmark.** Places outside the route database are
+  resolved on OpenStreetMap and snapped to the nearest served stop, with a
+  walking or keke leg to reach it ("Walk about 400 m from Bode Thomas Street
+  to Fadeyi").
+- **Settings.** Theme, map colours, reply language, voice language and voice,
+  read-replies-aloud, live location, follow-me, and what's running under the
+  hood (route data version, 0G model, voice engines).
 - **Live map.** Routes drawn along real roads, your live GPS position with
   heading, follow mode, step-by-step progress and ETA — plus a trip simulation
   for demos away from Lagos.
@@ -109,9 +118,12 @@ npm run dev
 ```
 
 Type or tap the mic and ask for a route in any supported language, then open
-🗺️ Live map to follow it. In development, Clerk sign-in works without keys
-(keyless mode); add `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`
-for production. See `.env.example` for every option.
+🗺️ Live map to follow it, or ⚙️ Settings to change language, voice and map
+behaviour. In development, Clerk sign-in works without keys (keyless mode);
+add `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` for production.
+A Clerk *production* instance on a `*.vercel.app` domain also needs
+`NEXT_PUBLIC_CLERK_PROXY_URL` (see `.env.example`). See `.env.example` for
+every option.
 
 ---
 
@@ -129,7 +141,11 @@ danfo-ai/
 │   ├── zg-compute.ts            # broker, inference, processResponse()
 │   ├── zg-storage.ts            # upload/download route KB (Merkle)
 │   ├── zg-chain.ts              # RouteCorrections contract (ethers v6)
-│   ├── prompt.ts                # multilingual system prompt builder
+│   ├── prompt.ts                # system prompt + model reply fact-check
+│   ├── compose-answer.ts        # the reply itself, in all five languages
+│   ├── route-planner.ts         # legs, fares, boarding points, alternatives
+│   ├── geocode.ts               # streets/landmarks via OpenStreetMap
+│   ├── useSettings.tsx          # rider preferences (per device)
 │   └── routes-kb.ts             # KB loader (0G Storage → seed fallback)
 ├── components/
 │   ├── RouteMap.tsx             # live map: road routes, GPS, progress, simulation

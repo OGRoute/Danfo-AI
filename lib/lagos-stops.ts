@@ -36,7 +36,7 @@ const STOP_DEFS: Record<string, StopDef> = {
   },
   "Owode Onirin": { pos: [6.609, 3.419], aliases: ["Owode-Onirin"] },
   "Mile 12": { pos: [6.606, 3.399], aliases: ["Mile twelve", "Mile12"] },
-  Ketu: { pos: [6.5966, 3.3905] },
+  Ketu: { pos: [6.5966, 3.3905], aliases: ["Ketu Alapere"] },
   Ojota: { pos: [6.583, 3.383] },
   Maryland: { pos: [6.572, 3.366] },
   Anthony: { pos: [6.56, 3.371], aliases: ["Anthony Village"] },
@@ -75,6 +75,56 @@ const STOP_DEFS: Record<string, StopDef> = {
   Festac: { pos: [6.4667, 3.2833], aliases: ["Festac Town", "Festac first gate"] },
   Apapa: { pos: [6.449, 3.363] },
   Badagry: { pos: [6.415, 2.881] },
+
+  // --- Island & Lekki–Epe corridor (local danfo, keke and ferry) ---
+  Ikoyi: { pos: [6.4523, 3.4357], aliases: ["Awolowo Road", "Dolphin Estate"] },
+  "Lekki Phase 2": { pos: [6.4551, 3.5223], aliases: ["Ikota"] },
+  Chevron: { pos: [6.443, 3.539], aliases: ["Chevron roundabout", "Chevy View"] },
+  VGC: { pos: [6.465, 3.554], aliases: ["V.G.C", "Victoria Garden City"] },
+  "Abraham Adesanya": { pos: [6.466, 3.586], aliases: ["Abraham Adesanya roundabout"] },
+  Badore: { pos: [6.475, 3.606], aliases: ["Badore jetty", "Badore ferry terminal"] },
+  Sangotedo: { pos: [6.472, 3.632], aliases: ["Shoprite Sangotedo", "Novare Mall"] },
+  Awoyaya: { pos: [6.476, 3.68] },
+  Eputu: { pos: [6.479, 3.7], aliases: ["Bogije"] },
+  Lakowe: { pos: [6.47, 3.74] },
+  "Ibeju-Lekki": { pos: [6.457, 3.81], aliases: ["Ibeju", "Akodo"] },
+  Epe: { pos: [6.584, 3.983] },
+  "Ebute Ero": { pos: [6.46, 3.39], aliases: ["Ebute-Ero"] },
+  Ijora: { pos: [6.469, 3.366], aliases: ["Ijora Olopa"] },
+
+  // --- Mainland local corridors ---
+  Isolo: { pos: [6.535, 3.316], aliases: ["Isolo Road", "Okota"] },
+  Ejigbo: { pos: [6.558, 3.29] },
+  Igando: { pos: [6.549, 3.245] },
+  Ogba: { pos: [6.627, 3.342], aliases: ["Ogba Ijaiye", "Aguda Ogba"] },
+  Bariga: { pos: [6.535, 3.388], aliases: ["Akoka"] },
+  Oworonshoki: { pos: [6.558, 3.398], aliases: ["Oworo", "Oworonsoki"] },
+  Ilupeju: { pos: [6.552, 3.359] },
+  Agric: { pos: [6.606, 3.487], aliases: ["Agric Ikorodu"] },
+  Ijede: { pos: [6.586, 3.576] },
+  Imota: { pos: [6.669, 3.664] },
+
+  // --- Lagos–Badagry (west) corridor ---
+  "Satellite Town": { pos: [6.457, 3.259], aliases: ["Satelite Town"] },
+  Agboju: { pos: [6.462, 3.283] },
+  Alakija: { pos: [6.459, 3.271] },
+  "Trade Fair": { pos: [6.462, 3.214], aliases: ["Aspamda", "Trade Fair Complex"] },
+  "Iyana Iba": { pos: [6.472, 3.182], aliases: ["Iba"] },
+  Ojo: { pos: [6.463, 3.19], aliases: ["Ojo Barracks", "Ojo Alaba"] },
+  Alaba: { pos: [6.4611, 3.1889], aliases: ["Alaba International Market", "Alaba market"] },
+  Okokomaiko: { pos: [6.462, 3.156] },
+  Agbara: { pos: [6.493, 3.057] },
+
+  // --- Northern corridor into Ogun State ---
+  Ojodu: { pos: [6.642, 3.36], aliases: ["Ojodu Estate", "Grammar School"] },
+  Akute: { pos: [6.683, 3.351], aliases: ["Ajuwon", "Alagbole"] },
+  "Sango Ota": { pos: [6.698, 3.242], aliases: ["Sango", "Ota", "Sango-Ota"] },
+  Ifo: { pos: [6.814, 3.198] },
+  Arepo: { pos: [6.715, 3.413] },
+  Magboro: { pos: [6.737, 3.419] },
+  Ibafo: { pos: [6.778, 3.401] },
+  Mowe: { pos: [6.813, 3.436] },
+  "Redemption Camp": { pos: [6.856, 3.44], aliases: ["RCCG camp", "Redemption City"] },
 };
 
 export const LAGOS_STOPS: Record<string, LatLng> = Object.fromEntries(

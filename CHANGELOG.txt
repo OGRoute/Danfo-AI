@@ -1,5 +1,64 @@
 ===============================================================================
  DanfoAI — Changelog
+ Branch: upgrade-r19
+ Date:   2026-09-22
+===============================================================================
+
+-------------------------------------------------------------------------------
+ ADDED — the local transport network
+-------------------------------------------------------------------------------
+
+  - Route database v3: 108 routes / 85 stops. The 58 new routes are the
+    informal network riders actually use — danfo and korope corridors, keke
+    feeders and boats — across the Island, Lekki–Epe, Oshodi/Isolo/Ikotun,
+    Yaba/Bariga, Ikorodu (Agric, Ijede, Imota), the Badagry axis (Satellite
+    Town, Iyana Iba, Alaba, Okokomaiko, Agbara) and the Ogun commuter belt
+    (Ojodu, Akute, Arepo, Magboro, Ibafo, Mowe, Redemption Camp, Sango Ota,
+    Ifo). Each carries its park, what the conductor shouts, the road it
+    follows and a rider-reported 2026 fare.
+  - Mode mix is now 77 danfo / 9 keke / 3 ferry / 15 BRT / 4 rail, so local
+    transport — not just LAMATA — drives the answers.
+
+-------------------------------------------------------------------------------
+ ADDED — any street, estate or landmark in Lagos
+-------------------------------------------------------------------------------
+
+  - lib/geocode.ts resolves places the route database doesn't know (streets,
+    estates, markets, landmarks) against OpenStreetMap, then snaps them to the
+    nearest stop with routes. Queued to one request a second and cached, per
+    OSM's usage policy.
+  - Trips that start or end off-network get a walking leg ("Walk about 400 m
+    from Bode Thomas Street to Fadeyi") or a keke hop when it's further,
+    translated into all five languages and drawn on the map.
+  - The planner allows one more change (5 legs), and direct long-distance runs
+    were added (Ajah–Epe, Berger–Mowe, Ikorodu–Epe, Ikeja–Sango Ota) so long
+    corridors aren't chains of short hops.
+
+-------------------------------------------------------------------------------
+ ADDED — Settings
+-------------------------------------------------------------------------------
+
+  - /settings (gear in the header): theme, map colours, trip card, reply
+    language, voice input language, read-replies-aloud, speaking voice, live
+    location and follow-me, account, clear chats, reset preferences, and an
+    About section showing the route data version, data source, 0G model and
+    voice engines (/api/status). Preferences are saved per device.
+
+-------------------------------------------------------------------------------
+ FIXED
+-------------------------------------------------------------------------------
+
+  - Live map showed "API KEY REQUIRED" across every tile: CARTO now requires a
+    key for its basemaps. Tiles come from OpenStreetMap again (dark theme
+    filters them), so place and street names are readable.
+  - Clerk production keys work on *.vercel.app: the instance's Frontend API is
+    proxied through /__clerk (app/api/clerk-proxy + a next.config rewrite),
+    since a production instance can't have DNS records under vercel.app.
+  - The place-name regex built an invalid character range, which would have
+    thrown on every chat request.
+
+===============================================================================
+ DanfoAI — Changelog
  Branch: upgrade-r18
  Date:   2026-09-14 (fixes 2026-09-15)
 ===============================================================================

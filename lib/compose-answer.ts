@@ -18,9 +18,13 @@ import {
 } from "./route-planner";
 
 const PAYS_BY_CARD = new Set(["brt", "rail", "ferry"]);
+// Walking costs nothing, so it never appears in "how to pay".
+const FREE_MODES = new Set(["walk"]);
 const ROAD_MODES = new Set(["danfo", "brt", "keke"]);
 
 const range = ([lo, hi]: [number, number]) => (lo === hi ? `${lo}` : `${lo}–${hi}`);
+const distance = (km?: number) =>
+  km == null ? "" : km < 1 ? `${Math.round((km * 1000) / 50) * 50} m` : `${km.toFixed(1)} km`;
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const unique = (items: string[]) => Array.from(new Set(items));
 /** The place itself, without the extra instructions some boarding points carry. */
@@ -41,6 +45,8 @@ function compare(alt: Itinerary, best: Itinerary) {
 interface Writer {
   /** Vehicle name as used in a sentence ("the BRT bus", "ọkọ̀ BRT"). */
   vehicle: Record<string, string>;
+  /** Walking to or from a street the rider named. */
+  walk: (n: number, leg: TripLeg, dist: string, time: string | null) => string;
   /** Shorter vehicle name for lists ("BRT bus"); defaults to `vehicle`. */
   short?: Record<string, string>;
   time: (minutes: [number, number]) => string;
@@ -56,8 +62,10 @@ interface Writer {
 }
 
 const EN: Writer = {
-  vehicle: { danfo: "a danfo (yellow bus)", brt: "the BRT bus", rail: "the train", ferry: "the ferry", keke: "a keke" },
-  short: { danfo: "danfo", brt: "BRT bus", rail: "train", ferry: "ferry", keke: "keke" },
+  vehicle: { danfo: "a danfo (yellow bus)", brt: "the BRT bus", rail: "the train", ferry: "the ferry", keke: "a keke", walk: "a walk" },
+  short: { danfo: "danfo", brt: "BRT bus", rail: "train", ferry: "ferry", keke: "keke", walk: "walk" },
+  walk: (n, leg, dist, time) =>
+    `${n}. Walk about ${dist} from ${leg.from} to ${leg.to}${time ? ` (about ${time})` : ""}.`,
   time: formatMinutes,
   summary: (it, fare, time) =>
     `From ${it.from} to ${it.to}: ${it.legs.length === 1 ? "1 vehicle" : `${it.legs.length} vehicles`}, ${fare} in total${time ? `, about ${time}` : ""}.`,
@@ -94,7 +102,9 @@ const EN: Writer = {
 };
 
 const PCM: Writer = {
-  vehicle: { danfo: "danfo", brt: "BRT bus", rail: "train", ferry: "ferry", keke: "keke" },
+  vehicle: { danfo: "danfo", brt: "BRT bus", rail: "train", ferry: "ferry", keke: "keke", walk: "waka" },
+  walk: (n, leg, dist, time) =>
+    `${n}. Waka small — about ${dist} from ${leg.from} go ${leg.to}${time ? ` (e fit take ${time})` : ""}.`,
   time: (r) => `${range(r)} minutes`,
   summary: (it, fare, time) =>
     `From ${it.from} go ${it.to}: ${it.legs.length === 1 ? "na one motor you go enter" : `you go enter ${it.legs.length} motor`}, ` +
@@ -124,7 +134,9 @@ const PCM: Writer = {
 };
 
 const YO: Writer = {
-  vehicle: { danfo: "ọkọ̀ danfo", brt: "ọkọ̀ BRT", rail: "ọkọ̀ ojú irin", ferry: "ọkọ̀ ojú omi", keke: "kẹ̀kẹ́ Maruwa" },
+  vehicle: { danfo: "ọkọ̀ danfo", brt: "ọkọ̀ BRT", rail: "ọkọ̀ ojú irin", ferry: "ọkọ̀ ojú omi", keke: "kẹ̀kẹ́ Maruwa", walk: "ìrìn" },
+  walk: (n, leg, dist, time) =>
+    `${n}. Rìn nǹkan bí ${dist} láti ${leg.from} sí ${leg.to}${time ? ` (ó máa gbà tó ${time})` : ""}.`,
   time: (r) => `ìṣẹ́jú ${range(r)}`,
   summary: (it, fare, time) =>
     `Láti ${it.from} sí ${it.to}: ${it.legs.length === 1 ? "ọkọ̀ kan ṣoṣo ni o máa wọ̀" : `ọkọ̀ ${it.legs.length} ni o máa wọ̀`}. ` +
@@ -154,7 +166,9 @@ const YO: Writer = {
 };
 
 const IG: Writer = {
-  vehicle: { danfo: "ụgbọ ala danfo", brt: "ụgbọ ala BRT", rail: "ụgbọ oloko", ferry: "ụgbọ mmiri", keke: "keke" },
+  vehicle: { danfo: "ụgbọ ala danfo", brt: "ụgbọ ala BRT", rail: "ụgbọ oloko", ferry: "ụgbọ mmiri", keke: "keke", walk: "ije ụkwụ" },
+  walk: (n, leg, dist, time) =>
+    `${n}. Jiri ụkwụ gaa ihe dị ka ${dist} site na ${leg.from} ruo ${leg.to}${time ? ` (ihe dị ka ${time})` : ""}.`,
   time: (r) => `nkeji ${range(r)}`,
   summary: (it, fare, time) =>
     `Site na ${it.from} gaa ${it.to}: ${it.legs.length === 1 ? "ị ga-abanye naanị otu ụgbọ" : `ị ga-abanye ụgbọ ${it.legs.length}`}. ` +
@@ -184,7 +198,9 @@ const IG: Writer = {
 };
 
 const HA: Writer = {
-  vehicle: { danfo: "motar danfo", brt: "motar BRT", rail: "jirgin ƙasa", ferry: "jirgin ruwa", keke: "keke napep" },
+  vehicle: { danfo: "motar danfo", brt: "motar BRT", rail: "jirgin ƙasa", ferry: "jirgin ruwa", keke: "keke napep", walk: "tafiya" },
+  walk: (n, leg, dist, time) =>
+    `${n}. Yi tafiya kusan ${dist} daga ${leg.from} zuwa ${leg.to}${time ? ` (kusan ${time})` : ""}.`,
   time: (r) => `minti ${range(r)}`,
   summary: (it, fare, time) =>
     `Daga ${it.from} zuwa ${it.to}: ${it.legs.length === 1 ? "mota ɗaya kawai za ka hau" : `za ka hau mota ${it.legs.length}`}. ` +
@@ -226,10 +242,21 @@ export function composeAnswer(plan: TripPlan, language: LangCode = "en"): string
   if (plan.originSource === "location") lines.push(w.nearest(best.from));
   for (const s of plan.substitutions) lines.push(w.substitute(s.requested, s.used, s.km));
 
-  lines.push("", ...best.legs.map((leg, i) => w.step(i + 1, leg, formatNaira(leg.fare), time(leg.duration))));
+  lines.push(
+    "",
+    ...best.legs.map((leg, i) =>
+      leg.mode === "walk"
+        ? w.walk(i + 1, leg, distance(leg.km), time(leg.duration))
+        : w.step(i + 1, leg, formatNaira(leg.fare), time(leg.duration))
+    )
+  );
 
   const kinds = (card: boolean) =>
-    unique(best.legs.filter((l) => PAYS_BY_CARD.has(l.mode) === card).map((l) => short(l.mode)));
+    unique(
+      best.legs
+        .filter((l) => !FREE_MODES.has(l.mode) && PAYS_BY_CARD.has(l.mode) === card)
+        .map((l) => short(l.mode))
+    );
   lines.push("", w.pay(kinds(false), kinds(true)));
 
   const alt = plan.alternatives[0];

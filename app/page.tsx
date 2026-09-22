@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
+import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { FlipWords } from "./flipword";
 import ThemeToggle from "../components/ThemeToggle";
@@ -19,6 +20,7 @@ import { useTextToSpeech } from "../lib/useTextToSpeech";
 import { useAuth } from "../lib/useAuth";
 import { useNotifications } from "../lib/useNotifications";
 import { useChatHistory, type Msg } from "../lib/useChatHistory";
+import { useSettings } from "../lib/useSettings";
 
 // Rotating greeting across Nigeria's major languages (animated via FlipWords).
 const GREETINGS = ["E kaabo.", "Nnọọ.", "Barka.", "Welcome."];
@@ -52,6 +54,7 @@ const INTRON_WIDGET_KEY =
 
 export default function Home() {
   const { status, method, identityKey, displayName, signOut } = useAuth();
+  const { settings, ready: settingsReady } = useSettings();
 
   // Identity scope for history + notifications (null = anonymous / ephemeral).
   const history = useChatHistory(identityKey);
@@ -85,6 +88,10 @@ export default function Home() {
     const lastAssistant = rev.find((m) => m.role === "assistant")?.content || "";
     return findStopsInText(`${lastUser} ${lastAssistant}`);
   }, [messages]);
+
+  useEffect(() => {
+    if (settingsReady && settings.voiceLanguage) setLang(settings.voiceLanguage);
+  }, [settingsReady, settings.voiceLanguage]);
 
   const langRef = useRef(lang);
   useEffect(() => {
@@ -148,7 +155,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: next.map(({ role, content }) => ({ role, content })),
-          language: lang || voiceLang || undefined,
+          language: settings.replyLanguage || lang || voiceLang || undefined,
           location: positionRef.current ?? undefined,
         }),
       });
@@ -169,6 +176,10 @@ export default function Home() {
       ];
       setMessages(final);
       history.saveMessages(final);
+      // Hands-free: read the answer out as soon as it lands.
+      if (settings.autoSpeak) {
+        tts.speak(final.length - 1, data.reply, data.language, settings.voiceGender);
+      }
       notif.notify(
         data.verified ? "Reply verified on 0G Compute" : "Reply received",
         data.verified ? "success" : "info"
@@ -250,6 +261,9 @@ export default function Home() {
         onPosition={(pos) => {
           positionRef.current = pos;
         }}
+        liveLocation={settings.liveLocation}
+        followMe={settings.followMe}
+        mapStyle={settings.mapStyle}
       />
 
       <main className="wrap">
@@ -301,6 +315,9 @@ export default function Home() {
               <UserButton />
             </div>
           )}
+          <Link href="/settings" className="iconbtn" aria-label="Settings" title="Settings">
+            <span aria-hidden>⚙️</span>
+          </Link>
           <ThemeToggle />
         </header>
 
@@ -324,7 +341,7 @@ export default function Home() {
           {messages.map((m, i) => (
             <div key={i} className={`bubble ${m.role}`}>
               <div className="content">{m.content}</div>
-              {m.role === "assistant" && m.plan?.best && (
+              {m.role === "assistant" && m.plan?.best && settings.showTripCard && (
                 <TripCard
                   plan={m.plan}
                   language={m.language}
@@ -344,7 +361,7 @@ export default function Home() {
                   <button
                     type="button"
                     className={`speak ${tts.playingId === i ? "playing" : ""}`}
-                    onClick={() => tts.speak(i, m.content, m.language)}
+                    onClick={() => tts.speak(i, m.content, m.language, settings.voiceGender)}
                     disabled={tts.loadingId === i}
                     aria-label={
                       tts.playingId === i ? "Stop speaking" : "Listen to reply"
@@ -554,6 +571,26 @@ export default function Home() {
           display: flex;
           align-items: center;
           flex-shrink: 0;
+        }
+        .iconbtn {
+          width: 38px;
+          height: 38px;
+          flex-shrink: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid var(--header-border);
+          border-radius: 999px;
+          color: var(--header-text);
+          text-decoration: none;
+          font-size: 16px;
+        }
+        .iconbtn:hover {
+          background: rgba(0, 0, 0, 0.08);
+        }
+        .iconbtn:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px var(--ring);
         }
         .brandtext {
           flex: 1;

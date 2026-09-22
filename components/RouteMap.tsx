@@ -25,6 +25,12 @@ interface Props {
   /** Stops mentioned in chat, highlighted when there's no itinerary. */
   stops: string[];
   onPosition?: (pos: LatLng) => void;
+  /** Start with GPS on (rider preference; defaults to on). */
+  liveLocation?: boolean;
+  /** Start following the rider's position. */
+  followMe?: boolean;
+  /** Force map colours instead of following the app theme. */
+  mapStyle?: "auto" | "light" | "dark";
 }
 
 interface Fix {
@@ -35,15 +41,25 @@ interface Fix {
 }
 
 const MODE_COLOR: Record<string, string> = {
+  walk: "#6b7280",
   danfo: "#e0b000",
   brt: "#0050b3",
   ferry: "#0e9f9a",
   keke: "#16a34a",
 };
 // Typical Lagos speeds, for ETA on legs without a published journey time.
-const MODE_KMH: Record<string, number> = { danfo: 14, brt: 20, rail: 40, ferry: 25, keke: 12 };
+const MODE_KMH: Record<string, number> = { walk: 4.5, danfo: 14, brt: 20, rail: 40, ferry: 25, keke: 12 };
 // Further than this from the line counts as off route.
 const OFF_ROUTE_M = 300;
+
+// Base map tiles. OpenStreetMap by default: free, no key, street names at
+// high zoom. Override for a commercial provider if the traffic grows.
+const OSM_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const TILE_URL = process.env.NEXT_PUBLIC_MAP_TILE_URL || OSM_TILE_URL;
+const DARK_TILE_URL = process.env.NEXT_PUBLIC_MAP_TILE_URL_DARK || "";
+const TILE_ATTRIBUTION =
+  process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION ||
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 function legColor(leg: TripLeg): string {
   if (leg.mode === "rail") return /blue/i.test(leg.line ?? "") ? "#1d4ed8" : "#d92626";
@@ -51,6 +67,14 @@ function legColor(leg: TripLeg): string {
 }
 
 const metres = (a: LatLng, b: LatLng) => haversineKm(a, b) * 1000;
+
+/** A leg's points: named stops, or the coordinates carried by access legs. */
+function legPoints(leg: TripLeg): LatLng[] {
+  const middle = leg.path.slice(1, -1).map((n) => LAGOS_STOPS[n]);
+  return [leg.fromPos ?? LAGOS_STOPS[leg.from], ...middle, leg.toPos ?? LAGOS_STOPS[leg.to]].filter(
+    Boolean
+  ) as LatLng[];
+}
 
 function bearing(a: LatLng, b: LatLng): number {
   const rad = Math.PI / 180;
@@ -203,11 +227,12 @@ function useLegGeometries(legs: TripLeg[]): LatLng[][] {
   const [geoms, setGeoms] = useState<LatLng[][]>([]);
 
   useEffect(() => {
-    const straight = legs.map((l) => l.path.map((n) => LAGOS_STOPS[n]).filter(Boolean) as LatLng[]);
+    const straight = legs.map(legPoints);
     setGeoms(straight);
     const ctrl = new AbortController();
     legs.forEach((leg, i) => {
-      if (leg.mode === "rail" || leg.mode === "ferry" || straight[i].length < 2) return;
+      // Trains and boats don't follow roads; walking legs are short and direct.
+      if (leg.mode === "rail" || leg.mode === "ferry" || leg.mode === "walk" || straight[i].length < 2) return;
       const points = straight[i].map((p) => p.join(",")).join(";");
       fetch(`/api/directions?points=${encodeURIComponent(points)}`, { signal: ctrl.signal })
         .then((r) => (r.ok ? r.json() : null))
@@ -373,7 +398,14 @@ function badgeIcon(label: string, color: string): L.DivIcon {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function RouteMap({ itineraries, stops, onPosition }: Props) {
+export default function RouteMap({
+  itineraries,
+  stops,
+  onPosition,
+  liveLocation = true,
+  followMe = false,
+  mapStyle = "auto",
+}: Props) {
   const { resolved } = useTheme();
 
   const [selected, setSelected] = useState(0);
@@ -384,8 +416,8 @@ export default function RouteMap({ itineraries, stops, onPosition }: Props) {
   const geoms = useLegGeometries(legs);
   const line = useMemo(() => (legs.length ? buildLine(geoms) : null), [geoms, legs.length]);
 
-  const [tracking, setTracking] = useState(true);
-  const [follow, setFollow] = useState(false);
+  const [tracking, setTracking] = useState(liveLocation);
+  const [follow, setFollow] = useState(followMe);
   const [simulating, setSimulating] = useState(false);
   const gps = useGeolocation(tracking);
   const sim = useSimulation(line, simulating);
@@ -417,24 +449,22 @@ export default function RouteMap({ itineraries, stops, onPosition }: Props) {
     [line, stops]
   );
 
-  const dark = resolved === "dark";
+  const dark = mapStyle === "auto" ? resolved === "dark" : mapStyle === "dark";
   const lastLeg = legs[legs.length - 1];
 
   return (
     <div className="rm">
       <MapContainer center={LAGOS_CENTER} zoom={11} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
         <TileLayer
-          key={resolved}
-          url={
-            dark
-              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          }
-          attribution={
-            dark
-              ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          }
+          key={dark ? "dark" : "light"}
+          // OpenStreetMap's own tiles need no API key. CARTO's free basemaps
+          // now stamp "API KEY REQUIRED" across every tile, so the dark theme
+          // filters these instead of using a second provider. Set
+          // NEXT_PUBLIC_MAP_TILE_URL (+ _DARK, _ATTRIBUTION) to use a paid one.
+          className={dark && !DARK_TILE_URL ? "rm-tiles-dark" : undefined}
+          url={(dark ? DARK_TILE_URL || TILE_URL : TILE_URL) || OSM_TILE_URL}
+          attribution={TILE_ATTRIBUTION}
+          maxZoom={19}
         />
         <InvalidateOnMount />
         <FitView points={fitPoints} disabled={follow} />
@@ -463,7 +493,10 @@ export default function RouteMap({ itineraries, stops, onPosition }: Props) {
                       color: legColor(legs[i]),
                       weight: 6,
                       opacity: progress && !progress.offRoute && progress.legIndex > i ? 0.4 : 0.95,
-                      dashArray: legs[i].mode === "ferry" || legs[i].mode === "keke" ? "10 8" : undefined,
+                      dashArray:
+                        legs[i].mode === "ferry" || legs[i].mode === "keke" || legs[i].mode === "walk"
+                          ? "10 8"
+                          : undefined,
                     }}
                   >
                     <Tooltip sticky>
@@ -489,16 +522,16 @@ export default function RouteMap({ itineraries, stops, onPosition }: Props) {
             )}
             {legs.map(
               (leg, i) =>
-                LAGOS_STOPS[leg.from] && (
-                  <Marker key={`board-${i}`} position={LAGOS_STOPS[leg.from]} icon={boardIcons[i]}>
+                legPoints(leg)[0] && (
+                  <Marker key={`board-${i}`} position={legPoints(leg)[0]} icon={boardIcons[i]}>
                     <Tooltip direction="top" offset={[0, -12]}>
                       Step {i + 1} — board at {leg.board}
                     </Tooltip>
                   </Marker>
                 )
             )}
-            {lastLeg && LAGOS_STOPS[lastLeg.to] && (
-              <Marker position={LAGOS_STOPS[lastLeg.to]} icon={finishIcon}>
+            {lastLeg && legPoints(lastLeg).slice(-1)[0] && (
+              <Marker position={legPoints(lastLeg).slice(-1)[0]} icon={finishIcon}>
                 <Tooltip direction="top" offset={[0, -12]}>
                   Destination: {lastLeg.alight}
                 </Tooltip>
@@ -657,6 +690,10 @@ export default function RouteMap({ itineraries, stops, onPosition }: Props) {
           position: relative;
           height: 100%;
           width: 100%;
+        }
+        /* Turn the light OSM tiles into a dark basemap (labels stay legible). */
+        .rm-tiles-dark {
+          filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.95) saturate(0.6);
         }
         .rm-controls {
           position: absolute;

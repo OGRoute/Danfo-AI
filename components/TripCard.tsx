@@ -4,6 +4,7 @@ import type { LangCode } from "../lib/language-detect";
 import { formatMinutes, formatNaira, type TripPlan } from "../lib/route-planner";
 
 export const MODE_ICON: Record<string, string> = {
+  walk: "🚶",
   danfo: "🚐",
   brt: "🚌",
   rail: "🚆",
@@ -24,8 +25,8 @@ interface Labels {
 }
 
 const EN_LABELS: Labels = {
-  mode: { danfo: "Danfo", brt: "BRT", rail: "Train", ferry: "Ferry", keke: "Keke" },
-  vehicles: (n) => (n === 1 ? "1 vehicle" : `${n} vehicles`),
+  mode: { danfo: "Danfo", brt: "BRT", rail: "Train", ferry: "Ferry", keke: "Keke", walk: "Walk" },
+  vehicles: (n) => (n === 1 ? "1 leg" : `${n} legs`),
   board: "Board",
   off: "Get off",
   nearYou: "from the stop nearest you",
@@ -39,7 +40,8 @@ const LABELS: Record<LangCode, Labels> = {
   en: EN_LABELS,
   pcm: {
     ...EN_LABELS,
-    vehicles: (n) => `${n} motor`,
+    mode: { ...EN_LABELS.mode, walk: "Waka" },
+    vehicles: (n) => `${n} step`,
     board: "Enter",
     off: "Drop",
     nearYou: "from the bus stop wey near you",
@@ -47,8 +49,8 @@ const LABELS: Record<LangCode, Labels> = {
     approximate: "Fare fit change",
   },
   yo: {
-    mode: { danfo: "Danfo", brt: "BRT", rail: "Ọkọ̀ ojú irin", ferry: "Ọkọ̀ ojú omi", keke: "Kẹ̀kẹ́" },
-    vehicles: (n) => `ọkọ̀ ${n}`,
+    mode: { danfo: "Danfo", brt: "BRT", rail: "Ọkọ̀ ojú irin", ferry: "Ọkọ̀ ojú omi", keke: "Kẹ̀kẹ́", walk: "Ìrìn" },
+    vehicles: (n) => `ìpele ${n}`,
     board: "Wọ̀ ní",
     off: "Bọ́lẹ̀ ní",
     nearYou: "láti ibùdókọ̀ tó sún mọ́ ọ",
@@ -58,8 +60,8 @@ const LABELS: Record<LangCode, Labels> = {
     map: "🗺️ Máàpù",
   },
   ig: {
-    mode: { danfo: "Danfo", brt: "BRT", rail: "Ụgbọ oloko", ferry: "Ụgbọ mmiri", keke: "Keke" },
-    vehicles: (n) => `ụgbọ ${n}`,
+    mode: { danfo: "Danfo", brt: "BRT", rail: "Ụgbọ oloko", ferry: "Ụgbọ mmiri", keke: "Keke", walk: "Ije ụkwụ" },
+    vehicles: (n) => `nzọụkwụ ${n}`,
     board: "Banye na",
     off: "Rịdata na",
     nearYou: "site n'ọdụ ụgbọ kacha nso gị",
@@ -69,8 +71,8 @@ const LABELS: Record<LangCode, Labels> = {
     map: "🗺️ Maapụ",
   },
   ha: {
-    mode: { danfo: "Danfo", brt: "BRT", rail: "Jirgin ƙasa", ferry: "Jirgin ruwa", keke: "Keke napep" },
-    vehicles: (n) => `mota ${n}`,
+    mode: { danfo: "Danfo", brt: "BRT", rail: "Jirgin ƙasa", ferry: "Jirgin ruwa", keke: "Keke napep", walk: "Tafiya" },
+    vehicles: (n) => `matakai ${n}`,
     board: "Hau a",
     off: "Sauka a",
     nearYou: "daga tashar da ta fi kusa da kai",
@@ -80,6 +82,12 @@ const LABELS: Record<LangCode, Labels> = {
     map: "🗺️ Taswira",
   },
 };
+
+/** Walking legs show how far, not a ₦0 fare. */
+function formatDistance(km?: number): string {
+  if (km == null) return "";
+  return km < 1 ? `${Math.round((km * 1000) / 50) * 50} m` : `${km.toFixed(1)} km`;
+}
 
 /**
  * The computed trip behind a reply: every leg with its boarding point, drop-off
@@ -128,8 +136,9 @@ export default function TripCard({
                   {leg.line ? ` · ${leg.line}` : ""}
                 </span>
                 <span className="leg-fare">
-                  {formatNaira(leg.fare)}
-                  {leg.estimated ? "*" : ""}
+                  {leg.mode === "walk"
+                    ? formatDistance(leg.km)
+                    : `${formatNaira(leg.fare)}${leg.estimated ? "*" : ""}`}
                 </span>
               </div>
               <div className="leg-line">
