@@ -1,36 +1,11 @@
 "use client";
 
-import { ClerkLoaded, ClerkLoading, SignIn } from "@clerk/nextjs";
+import { ClerkLoaded, ClerkLoading, SignIn, SignUpButton } from "@clerk/nextjs";
+import { clerkAppearance } from "../lib/clerk-appearance";
 import { useAuth } from "../lib/useAuth";
 import { useTheme } from "../lib/useTheme";
 import TransitBackground from "./TransitBackground";
 import ThemeToggle from "./ThemeToggle";
-
-/** Clerk's sign-in card, re-skinned in DanfoAI's yellow/ink palette per theme. */
-function clerkAppearance(dark: boolean) {
-  return {
-    variables: {
-      colorPrimary: "#ffd400",
-      colorTextOnPrimaryBackground: "#111111",
-      colorBackground: dark ? "#1f1d16" : "#ffffff",
-      colorText: dark ? "#f4f1e6" : "#111111",
-      colorTextSecondary: dark ? "#b8b09a" : "#5b4a00",
-      colorInputBackground: dark ? "#14130d" : "#ffffff",
-      colorInputText: dark ? "#f4f1e6" : "#111111",
-      colorNeutral: dark ? "#f4f1e6" : "#111111",
-      borderRadius: "12px",
-      fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-    },
-    elements: {
-      rootBox: { width: "100%" },
-      cardBox: { width: "100%", boxShadow: "none", border: "none" },
-      card: { boxShadow: "none", border: "none", background: "transparent", padding: "4px 0 8px" },
-      // Our own heading sits above the card.
-      header: { display: "none" },
-      footer: { background: "transparent" },
-    },
-  };
-}
 
 /**
  * Landing / sign-in screen shown before a session exists. Clerk's embedded
@@ -78,6 +53,11 @@ export default function AuthGate() {
                 <SignIn routing="hash" appearance={clerkAppearance(resolved === "dark")} />
               </div>
             </ClerkLoaded>
+            <SignUpButton mode="modal">
+              <button className="btn primary" type="button">
+                Create an account
+              </button>
+            </SignUpButton>
             <div className="divider" aria-hidden>
               <span>or</span>
             </div>

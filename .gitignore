@@ -30,3 +30,7 @@ yarngpt-service/models/
 .clerk/
 .vercel
 .env*
+
+# Clerk CLI agent skills (local tooling)
+.agents/
+skills-lock.json
