@@ -29,6 +29,11 @@ const THEMES: Array<{ value: ThemePref; label: string }> = [
   { value: "system", label: "System" },
 ];
 
+interface Feedback {
+  total: number;
+  routesCorrected: number;
+}
+
 interface Status {
   routes?: { version: number; updatedAt: string; count: number; stops: number; modes: Record<string, number>; source: string };
   voice?: { speechToText: string; problem: string | null; textToSpeech: string };
@@ -187,6 +192,7 @@ export default function SettingsPage() {
   const { pref, setPref } = useTheme();
   const { method, displayName, signOut } = useAuth();
   const [status, setStatus] = useState<Status | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [cleared, setCleared] = useState("");
 
   useEffect(() => {
@@ -194,6 +200,10 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then(setStatus)
       .catch(() => setStatus(null));
+    fetch("/api/feedback")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setFeedback)
+      .catch(() => setFeedback(null));
   }, []);
 
   function clearChats() {
@@ -365,6 +375,16 @@ export default function SettingsPage() {
           </Row>
           <Row label="Streets" hint="Street and landmark search uses OpenStreetMap.">
             <span className="value">OpenStreetMap</span>
+          </Row>
+          <Row
+            label="Rider corrections"
+            hint="Feedback recorded on 0G Chain, folded back into fares and boarding points."
+          >
+            <span className="value">
+              {feedback
+                ? `${feedback.total} submitted · ${feedback.routesCorrected} route${feedback.routesCorrected === 1 ? "" : "s"} corrected`
+                : "…"}
+            </span>
           </Row>
           <p className="fine">
             Fares are community estimates and change often. Corrections are recorded on 0G Chain.

@@ -5,6 +5,7 @@ import { buildSystemPrompt, replyKeepsFacts } from "../../../lib/prompt";
 import { composeAnswer } from "../../../lib/compose-answer";
 import { extractPlacePhrases, planTrip } from "../../../lib/route-planner";
 import { resolveEndpoint } from "../../../lib/geocode";
+import { applyCorrections, loadOverrides } from "../../../lib/corrections";
 import { detectLanguage, isLangCode, type LangCode } from "../../../lib/language-detect";
 import { isTimeoutError } from "../../../lib/zg-provider";
 import type { LatLng } from "../../../lib/lagos-stops";
@@ -65,7 +66,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "messages array required" }, { status: 400 });
     }
 
-    const { kb, source } = await loadRouteKB();
+    const { kb: published, source } = await loadRouteKB();
+    // Riders' corrections (recorded on 0G Chain) take precedence over the
+    // published fares and boarding points — this is how DanfoAI learns.
+    const { overrides } = await loadOverrides();
+    const kb = applyCorrections(published, overrides);
 
     const userTexts = messages.filter((m) => m.role === "user").map((m) => m.content);
     const location = asLatLng(body.location);

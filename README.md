@@ -29,6 +29,11 @@ What's inside:
   resolved on OpenStreetMap and snapped to the nearest served stop, with a
   walking or keke leg to reach it ("Walk about 400 m from Bode Thomas Street
   to Fadeyi").
+- **Feedback that teaches it.** Rate any answer, or correct it — the fare you
+  really paid, the real boarding point, a route that no longer runs. The
+  correction is recorded on 0G Chain and folded back into the route data, so
+  once a couple of riders agree, everyone gets the corrected fare. The model
+  isn't retrained; the data it answers from is.
 - **Settings.** Theme, map colours, reply language, voice language and voice,
   read-replies-aloud, live location, follow-me, and what's running under the
   hood (route data version, 0G model, voice engines).

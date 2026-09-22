@@ -37,6 +37,8 @@ export interface KBRoute {
   minFare?: number;
   /** Typical wait for the next vehicle in minutes, added to journey time. */
   wait?: number;
+  /** Fare or boarding point was corrected by riders (see lib/corrections.ts). */
+  communityCorrected?: boolean;
   notes?: string;
 }
 

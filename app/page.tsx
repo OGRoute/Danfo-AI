@@ -11,6 +11,7 @@ import NotificationBell from "../components/NotificationBell";
 import HistoryDrawer from "../components/HistoryDrawer";
 import MapPanel from "../components/MapPanel";
 import TripCard from "../components/TripCard";
+import FeedbackBar from "../components/FeedbackBar";
 import IntronVoiceInput from "../components/IntronVoiceInput";
 import { findStopsInText, type LatLng } from "../lib/lagos-stops";
 import { LANGUAGE_NAMES, type LangCode } from "../lib/language-detect";
@@ -371,6 +372,9 @@ export default function Home() {
                     {tts.loadingId === i ? "…" : tts.playingId === i ? "◼" : "🔊"}
                   </button>
                 </div>
+              )}
+              {m.role === "assistant" && !m.content.startsWith("Wahala dey o") && (
+                <FeedbackBar plan={m.plan ?? null} language={m.language} />
               )}
             </div>
           ))}

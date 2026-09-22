@@ -1,8 +1,31 @@
 ===============================================================================
  DanfoAI — Changelog
- Branch: upgrade-r19
+ Branch: upgrade-r20
  Date:   2026-09-22
 ===============================================================================
+
+-------------------------------------------------------------------------------
+ ADDED — rider feedback, and the AI learning from it
+-------------------------------------------------------------------------------
+
+  - Every reply now carries a feedback bar: thumbs up/down, or "Fix something"
+    for a concrete correction — the fare you actually paid, the real boarding
+    point, or "that route doesn't run" — with an optional note, in all five
+    languages (components/FeedbackBar.tsx, /api/feedback).
+  - Corrections are recorded on 0G Chain in the RouteCorrections contract,
+    deployed at 0xBaD579B89b69700f90B65f20fbeA3A1c1b2d6fb6, with a link to the
+    transaction. The footer's "corrections recorded on 0G Chain" is now true.
+  - lib/corrections.ts folds them back into the route data: fares reported by
+    at least CORRECTION_MIN_REPORTS riders (default 2, upvotes add weight)
+    replace the published fare by median, boarding points can be corrected,
+    and the route carries "Fare corrected by N riders using this route."
+    Verified end to end: Isolo–Ejigbo went from ₦200–₦400 to ₦500–₦600 after
+    two reports, with other routes untouched.
+  - The model on 0G Compute can't be retrained, so this is where DanfoAI
+    actually learns — the answers come from the route data, and riders own it.
+  - Settings → About shows how many corrections have been submitted and how
+    many routes they currently change. Feedback is rate limited (6/hour per
+    IP, 200/day) because each on-chain write costs gas from the app wallet.
 
 -------------------------------------------------------------------------------
  ADDED — the local transport network
