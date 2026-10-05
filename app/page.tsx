@@ -74,7 +74,7 @@ export default function Home() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Latest GPS fix from the live map, so "take me to Ikeja" can start from here.
-  const positionRef = useRef<LatLng | null>(null);
+  const positionRef = useRef<{ pos: LatLng; accuracy?: number } | null>(null);
 
   // The most recent computed trip, for the header map button.
   const latestPlan = useMemo(
@@ -157,7 +157,8 @@ export default function Home() {
         body: JSON.stringify({
           messages: next.map(({ role, content }) => ({ role, content })),
           language: settings.replyLanguage || lang || voiceLang || undefined,
-          location: positionRef.current ?? undefined,
+          location: positionRef.current?.pos ?? undefined,
+          locationAccuracy: positionRef.current?.accuracy,
         }),
       });
       const data = await res.json();
@@ -259,8 +260,8 @@ export default function Home() {
         onClose={() => setMapOpen(false)}
         plan={mapPlan}
         stops={detectedStops}
-        onPosition={(pos) => {
-          positionRef.current = pos;
+        onPosition={(pos, accuracy) => {
+          positionRef.current = { pos, accuracy };
         }}
         liveLocation={settings.liveLocation}
         followMe={settings.followMe}

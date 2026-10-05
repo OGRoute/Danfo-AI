@@ -1,5 +1,112 @@
 ===============================================================================
  DanfoAI — Changelog
+ Branch: upgrade-r21
+ Date:   2026-10-05
+===============================================================================
+
+-------------------------------------------------------------------------------
+ CHANGED — fares now come from LAMATA's published table
+-------------------------------------------------------------------------------
+
+  Riders and reviewers both said the same thing: the routing and pricing needed
+  fixing. The fares predated LAMATA's 13% increase of 2 March 2026, and the
+  blue standard-route buses were being described as BRT.
+
+  - All 22 official BRT services and 53 official LAMATA standard routes are in
+    data/lagos-routes.json with their exact published fares, flagged `official`
+    with a `fareSource`. 176 routes over 106 stops (was 108 over 85).
+  - New mode `lamata` for the blue LBSL standard-route buses, separate from
+    BRT, with its own colour on the map, label in all five languages and
+    Cowry-card payment wording.
+  - 20 new stops with coordinates (Alausa, Dopemu, Ayobo, Command, Ikola,
+    Tollgate, Odogunyan, Igbogbo, Elepe, Maya, Joke Ayo, Barracks and more).
+  - LAMATA charges from a table, not by the kilometre, so a pro-rated section
+    fare for BRT or a blue bus is a guess at a price that exists officially.
+    The planner now treats BRT and LAMATA as one fare family: a published fare
+    suppresses invented section fares for the same hop, and inventing one costs
+    ESTIMATE_PENALTY_OFFICIAL. Ikorodu → Maryland quoted ₦500 from a pro-rated
+    blue-bus section when the published fare is ₦570; it now quotes ₦570.
+  - Lekki-corridor danfo fares riders downvoted were above the official bus on
+    the same stretch, which is implausible: Obalende → Ajah ₦800–1,200 → ₦500–800,
+    Ajah → CMS ₦900–1,300 → ₦700–1,000, Victoria Island → Ajah ₦600–900 → ₦450–700.
+
+-------------------------------------------------------------------------------
+ FIXED — answers when there is no trip to describe
+-------------------------------------------------------------------------------
+
+  - "Abuja to Lagos" planned a four-vehicle trip from Falomo: the geocoder was
+    asked for "Abuja" and handed back a Lagos street of that name. Cities
+    outside the covered area are now recognised and refused honestly, both
+    before geocoding and in the planner — unless both ends already matched real
+    Lagos stops, so "I just came from Abuja, Yaba to Lekki" still plans.
+  - Typos now resolve: "ikorodo to ikaja" plans Ikorodu → Ikeja. Stop names and
+    aliases are matched by edit distance, with the budget scaled to name length
+    so short names aren't confused with each other (lib/lagos-stops.ts).
+  - "Ikeja to Ikeja", "I want to go to Ikeja" and "Hello" used to be handed to
+    the 7B model, which improvised — usually nonsense, and often in the wrong
+    language. TripPlan now carries a `status` (need-origin, need-destination,
+    same-place, out-of-area, no-connection, no-trip) and composeNoTrip() writes
+    the reply from templates in all five languages. The model is not called at
+    all when there is no trip, which also cuts 0G spend.
+
+-------------------------------------------------------------------------------
+ FIXED — live location ("it misrepresented my position on the map")
+-------------------------------------------------------------------------------
+
+  - A Wi-Fi or IP fix accurate to ±5 km was drawn as a confident pulsing blue
+    dot labelled "Live". Fixes coarser than 500 m are now shown as the area
+    they are — grey dashed circle, no heading cone — the button reads
+    "Approximate ±2.1 km", and the map explains how to get a real GPS fix.
+  - A fresh sharp fix is no longer replaced by a vague one seconds later, and a
+    coarse fix's drift is never read as a direction of travel.
+  - Worse than the map: planTrip() accepted the nearest stop within 8 km of any
+    fix as the rider's starting point. The radius is now 3 km, accuracy is
+    carried from the map through /api/chat into the planner, and a fix vaguer
+    than 500 m is not used to guess where someone is boarding — DanfoAI asks
+    instead.
+
+-------------------------------------------------------------------------------
+ ADDED — admin dashboard, as its own site
+-------------------------------------------------------------------------------
+
+  - admin/ is a separate Next.js app with its own deployment, password sign-in
+    (signed HTTPOnly cookie, no identity provider) and noindex headers. It
+    holds no database: it reads the live picture from the rider-facing app.
+  - /api/admin/overview on the main app (token-protected, read-only) serves
+    rider feedback from 0G Chain with what it has actually changed, routes
+    riders dispute, questions that planned no trip, and fare-table coverage.
+  - The dashboard shows corrections in force, disputed routes demoted pending
+    review, the unanswered-question list to work from next, and per-mode
+    official-fare coverage with the remaining gaps named.
+
+-------------------------------------------------------------------------------
+ CHANGED — a thumbs-down now teaches something
+-------------------------------------------------------------------------------
+
+  - A 👎 carries no fare, so it used to change nothing. Routes disputed by at
+    least CORRECTION_MIN_REPORTS riders, and disputed more often than they are
+    praised, are marked `disputed`: they carry a note, and DISPUTE_PENALTY
+    demotes them in planning so they stop leading answers until checked. They
+    are not deleted — a few annoyed riders shouldn't erase a real road.
+  - Feedback given with no trip on screen is recorded against the sentinel pair
+    app → feedback. It was being aggregated as a disputed route; it is now
+    excluded from route overrides and disputes entirely.
+  - lib/query-log.ts keeps a short in-memory record of what was asked and
+    whether it planned, for the admin site. Nothing is written to disk or
+    on-chain, and it resets on restart — the dashboard says so.
+
+-------------------------------------------------------------------------------
+ ENVIRONMENT
+-------------------------------------------------------------------------------
+
+  Main app:   ADMIN_TOKEN            shared secret for /api/admin/*
+  Admin app:  DANFO_API_BASE         where the rider-facing app lives
+              ADMIN_TOKEN            must match the main app
+              ADMIN_PASSWORD         dashboard sign-in
+              ADMIN_SESSION_SECRET   signs the session cookie
+
+===============================================================================
+ DanfoAI — Changelog
  Branch: upgrade-r20
  Date:   2026-09-22
 ===============================================================================

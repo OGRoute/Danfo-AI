@@ -3,6 +3,8 @@ import { getRecentCorrections, submitCorrection } from "../../../lib/zg-chain";
 import {
   aggregate,
   invalidateOverrides,
+  NO_TRIP_FROM,
+  NO_TRIP_TO,
   type CorrectionKind,
   type CorrectionPayload,
 } from "../../../lib/corrections";
@@ -86,8 +88,8 @@ export async function POST(req: NextRequest) {
     const rating = body?.rating === "up" || body?.rating === "down" ? body.rating : undefined;
     const kind: CorrectionKind = KINDS.includes(body?.kind) ? body.kind : rating ? "praise" : "other";
     const note = clean(body?.note, MAX_NOTE);
-    const from = clean(body?.from, 60) || "app";
-    const to = clean(body?.to, 60) || "feedback";
+    const from = clean(body?.from, 60) || NO_TRIP_FROM;
+    const to = clean(body?.to, 60) || NO_TRIP_TO;
     const mode = clean(body?.mode, 20) || undefined;
     const board = clean(body?.board, 200) || undefined;
     const fare = fareRange(body?.fare);

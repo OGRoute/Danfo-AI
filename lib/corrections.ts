@@ -16,6 +16,10 @@ import { getRecentCorrections, type Correction } from "./zg-chain";
 
 export type CorrectionKind = "fare" | "board" | "missing" | "wrong" | "praise" | "other";
 
+/** Stop pair used by /api/feedback when the rider had no trip on screen. */
+export const NO_TRIP_FROM = "app";
+export const NO_TRIP_TO = "feedback";
+
 export interface CorrectionPayload {
   kind: CorrectionKind;
   /** Vehicle the rider actually used. */
@@ -39,6 +43,8 @@ const CACHE_TTL_MS = 5 * 60_000;
 export interface RouteOverride {
   fare?: [number, number];
   board?: string;
+  /** Riders disputed this route often enough that it shouldn't lead answers. */
+  disputed?: boolean;
   /** How many riders backed this. */
   reports: number;
   /** Riders saying the route doesn't exist / is wrong. */
@@ -77,6 +83,10 @@ export function aggregate(corrections: Correction[]): Overrides {
   for (const c of corrections) {
     const payload = parsePayload(c.detail);
     if (!payload || !c.fromStop || !c.toStop) continue;
+    // Feedback given with no trip on screen is recorded against this sentinel
+    // pair. It's a signal about the app, not about a route, so it never
+    // becomes a route override or a dispute.
+    if (c.fromStop === NO_TRIP_FROM && c.toStop === NO_TRIP_TO) continue;
     const key = overrideKey(c.fromStop, c.toStop, payload.mode);
     const entry = overrides.get(key) ?? { reports: 0, disputes: 0, notes: [] };
     // One report, plus a little weight for riders who upvoted it.
@@ -93,6 +103,13 @@ export function aggregate(corrections: Correction[]): Overrides {
     if (payload.kind === "board" && payload.board) entry.board = payload.board;
     if (payload.note) entry.notes.push(payload.note);
     overrides.set(key, entry);
+  }
+
+  // A thumbs-down carries no fare, but it is still information: enough riders
+  // saying a route is wrong demotes it and marks it for review, rather than it
+  // silently staying the best answer.
+  for (const entry of overrides.values()) {
+    if (entry.disputes >= MIN_REPORTS && entry.disputes > entry.reports) entry.disputed = true;
   }
 
   for (const [key, reported] of fares) {
@@ -155,16 +172,22 @@ export function applyCorrections(kb: RouteKB, overrides: Overrides): RouteKB {
     const forward = overrides.get(overrideKey(route.from, route.to, route.mode));
     const reverse = overrides.get(overrideKey(route.to, route.from, route.mode));
     const o = forward ?? reverse;
-    if (!o || (!o.fare && !o.board)) return route;
+    if (!o || (!o.fare && !o.board && !o.disputed)) return route;
     changed = true;
     const riders = o.reports === 1 ? "1 rider" : `${o.reports} riders`;
+    const doubters = o.disputes === 1 ? "1 rider" : `${o.disputes} riders`;
     return {
       ...route,
       fare: o.fare ?? route.fare,
       board: o.board && forward ? o.board : route.board,
       boardReverse: o.board && !forward ? o.board : route.boardReverse,
       communityCorrected: true,
-      notes: [route.notes, o.fare ? `Fare corrected by ${riders} using this route.` : ""]
+      disputed: o.disputed || undefined,
+      notes: [
+        route.notes,
+        o.fare ? `Fare corrected by ${riders} using this route.` : "",
+        o.disputed ? `${doubters} reported this route as wrong — treat it with care.` : "",
+      ]
         .filter(Boolean)
         .join(" ")
         .trim(),

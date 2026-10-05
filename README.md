@@ -182,3 +182,13 @@ danfo-ai/
 [0G Chain](https://docs.0g.ai) · Next.js · ethers v6
 
 _Route data and fares are community-maintained and approximate. Corrections welcome — that's the whole point._
+
+## Admin dashboard
+
+The maintainers' view — rider feedback from 0G Chain, routes riders dispute,
+questions that planned no trip, and fare-table coverage — is a **separate app**
+in [`admin/`](admin/) with its own deployment, so the rider-facing site stays
+rider-facing. See [admin/README.md](admin/README.md).
+
+It reads `/api/admin/overview` on this app, which needs `ADMIN_TOKEN` set here
+and the same value set there.

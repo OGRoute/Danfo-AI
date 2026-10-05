@@ -12,8 +12,10 @@ import type { KBRoute, RouteKB } from "./prompt";
 import {
   LAGOS_STOPS,
   findStopHits,
+  fuzzyFindStop,
   haversineKm,
   nearestStop,
+  normalizeText,
   type LatLng,
 } from "./lagos-stops";
 
@@ -39,6 +41,8 @@ export interface TripLeg {
   path: string[];
   /** True when the fare is pro-rated for part of a line rather than published. */
   estimated: boolean;
+  /** True when the fare is the operator's published fare for exactly this trip. */
+  official?: boolean;
   notes?: string;
 }
 
@@ -64,6 +68,27 @@ export interface TripPlan {
   destination: string | null;
   /** How the origin was found: named by the rider, or nearest to their GPS fix. */
   originSource: "text" | "location" | null;
+  /**
+   * Why there is (or isn't) a trip, so the answer can say something true
+   * instead of leaving the model to improvise:
+   *  ok             — a trip was planned
+   *  need-origin    — destination understood, starting point missing
+   *  need-destination — the reverse
+   *  same-place     — start and destination are the same place
+   *  out-of-area    — a city DanfoAI doesn't cover was named
+   *  no-connection  — both places known, no route between them
+   *  no-trip        — no journey in the message at all
+   */
+  status:
+    | "ok"
+    | "need-origin"
+    | "need-destination"
+    | "same-place"
+    | "out-of-area"
+    | "no-connection"
+    | "no-trip";
+  /** The place named that falls outside the covered area. */
+  outOfArea?: string;
   /** Places with no mapped route that were swapped for a nearby served stop. */
   substitutions: Array<{ requested: string; used: string; km: number }>;
   best: Itinerary | null;
@@ -89,13 +114,29 @@ export function formatMinutes([lo, hi]: [number, number]): string {
 // ---------------------------------------------------------------------------
 
 // Lowest fare charged for any ride on a mode, used when pro-rating a section.
-const MIN_FARE: Record<string, number> = { danfo: 300, keke: 200, brt: 300, rail: 200, ferry: 1000 };
+const MIN_FARE: Record<string, number> = { danfo: 300, keke: 200, brt: 300, lamata: 400, rail: 200, ferry: 1000 };
 // Naira-equivalent cost of getting off and boarding another vehicle.
 const TRANSFER_PENALTY = 250;
 // Naira-equivalent value of a minute of travel time.
 const MINUTE_COST = 8;
 // Slight preference for published end-to-end fares over pro-rated sections.
 const ESTIMATE_PENALTY = 40;
+/**
+ * LAMATA (BRT and the blue standard-route buses) charges from a published fare
+ * table by Cowry card, not by the kilometre — so a pro-rated section fare for
+ * those services is a guess at a price that actually exists somewhere official.
+ * They share one family: a published BRT fare also rules out a made-up blue-bus
+ * section for the same hop, and inventing one is penalised hard.
+ */
+const OFFICIAL_MODES = new Set(["brt", "lamata"]);
+const fareFamily = (mode: string) => (OFFICIAL_MODES.has(mode) ? "lamata" : mode);
+const ESTIMATE_PENALTY_OFFICIAL = 250;
+/**
+ * Routes riders have reported as wrong (see lib/corrections.ts) are not deleted
+ * — a few annoyed riders shouldn't erase a real road — but they stop being the
+ * first answer while the report is reviewed.
+ */
+const DISPUTE_PENALTY = 600;
 const MAX_LEGS = 5;
 // How far a named place may be from a served stop before we give up on it.
 const SNAP_KM = 4;
@@ -181,7 +222,12 @@ function buildGraph(kb: RouteKB): Graph {
               (fare[0] + fare[1]) / 2 +
               minutes * MINUTE_COST +
               TRANSFER_PENALTY +
-              (full ? 0 : ESTIMATE_PENALTY),
+              (full
+                ? 0
+                : OFFICIAL_MODES.has(route.mode)
+                  ? ESTIMATE_PENALTY_OFFICIAL
+                  : ESTIMATE_PENALTY) +
+              (route.disputed ? DISPUTE_PENALTY : 0),
           };
           const list = graph.get(edge.from) ?? [];
           list.push(edge);
@@ -190,15 +236,18 @@ function buildGraph(kb: RouteKB): Graph {
       }
     }
   }
-  // A published fare beats a pro-rated estimate for the same hop on the same mode.
+  // A published fare beats a pro-rated estimate for the same hop in the same
+  // fare family, so riders are quoted the price the operator actually charges.
   const published = new Set<string>();
   for (const list of graph.values()) {
-    for (const e of list) if (!e.estimated) published.add(`${e.from}>${e.to}:${e.route.mode}`);
+    for (const e of list) if (!e.estimated) published.add(`${e.from}>${e.to}:${fareFamily(e.route.mode)}`);
   }
   for (const [stop, list] of graph) {
     graph.set(
       stop,
-      list.filter((e) => !e.estimated || !published.has(`${e.from}>${e.to}:${e.route.mode}`))
+      list.filter(
+        (e) => !e.estimated || !published.has(`${e.from}>${e.to}:${fareFamily(e.route.mode)}`)
+      )
     );
   }
   return graph;
@@ -266,7 +315,14 @@ function shortestPath(graph: Graph, source: string, target: string, banned: Set<
   return out;
 }
 
-const VEHICLE: Record<string, string> = { danfo: "danfo", brt: "BRT bus", rail: "train", ferry: "ferry", keke: "keke" };
+const VEHICLE: Record<string, string> = {
+  danfo: "danfo",
+  brt: "BRT bus",
+  lamata: "LAMATA blue bus",
+  rail: "train",
+  ferry: "ferry",
+  keke: "keke",
+};
 const PLACE: Record<string, string> = { rail: "station", ferry: "jetty", keke: "keke stand" };
 const firstClause = (s: string) => s.split(" — ")[0];
 
@@ -297,6 +353,7 @@ function legFromEdge(e: Edge): TripLeg {
     towards: atNamedStart ? undefined : lineEnd,
     path: e.path,
     estimated: e.estimated,
+    official: !!r.official && !e.estimated,
     notes: r.notes,
   };
 }
@@ -544,18 +601,70 @@ export function extractPlacePhrases(text: string): { origin: string | null; dest
 }
 
 /**
+ * DanfoAI covers Lagos State and the Ogun towns on its edge. Riders do ask for
+ * other cities, and the geocoder will happily match a Lagos street called
+ * "Abuja Street" — so these names are recognised and refused honestly rather
+ * than turned into a trip the rider cannot take.
+ */
+const OUT_OF_AREA: Record<string, string> = {
+  abuja: "Abuja", kano: "Kano", kaduna: "Kaduna", jos: "Jos", enugu: "Enugu",
+  onitsha: "Onitsha", aba: "Aba", owerri: "Owerri", calabar: "Calabar",
+  uyo: "Uyo", benin: "Benin City", "benin city": "Benin City", warri: "Warri",
+  "port harcourt": "Port Harcourt", portharcourt: "Port Harcourt", phc: "Port Harcourt",
+  ibadan: "Ibadan", ilorin: "Ilorin", oyo: "Oyo", osogbo: "Osogbo", akure: "Akure",
+  ado: "Ado Ekiti", "ado ekiti": "Ado Ekiti", abeokuta: "Abeokuta", ijebu: "Ijebu Ode",
+  "ijebu ode": "Ijebu Ode", sokoto: "Sokoto", maiduguri: "Maiduguri", bauchi: "Bauchi",
+  yola: "Yola", minna: "Minna", lokoja: "Lokoja", makurdi: "Makurdi", asaba: "Asaba",
+  awka: "Awka", abakaliki: "Abakaliki", umuahia: "Umuahia", zaria: "Zaria",
+  katsina: "Katsina", gombe: "Gombe", jalingo: "Jalingo", lafia: "Lafia",
+  ghana: "Ghana", accra: "Accra", cotonou: "Cotonou", lome: "Lom\u00e9",
+  london: "London", dubai: "Dubai",
+};
+
+/** A city outside the covered area named in the text, if any. */
+export function outOfAreaPlace(text: string): string | null {
+  const flat = normalizeText(text);
+  for (const [needle, label] of Object.entries(OUT_OF_AREA)) {
+    if (flat.includes(` ${needle} `)) return label;
+  }
+  return null;
+}
+
+/**
+ * True when a place phrase names somewhere outside the covered area, so the
+ * geocoder isn't asked to find "Abuja" and handed a Lagos street of that name.
+ */
+export function isOutOfArea(phrase: string): boolean {
+  return outOfAreaPlace(phrase) !== null;
+}
+
+/**
+ * A fix vaguer than this is a neighbourhood, not a position, so it is not used
+ * to pick where the rider is boarding — better to ask than to start the trip
+ * from a stop they were never near.
+ */
+const COARSE_LOCATION_M = 500;
+/** Furthest a live fix may be from a served stop for that stop to be the start. */
+const LOCATION_SNAP_KM = 3;
+
+/**
  * Plan the trip the conversation is about.
  * @param userTexts the rider's messages, oldest first
  * @param location  the rider's live GPS position, if they shared it
+ * @param accuracy  how precise that position is, in metres
  */
 export function planTrip(
   kb: RouteKB,
   userTexts: string[],
   location?: LatLng | null,
-  places?: TripPlan["places"]
+  places?: TripPlan["places"],
+  accuracy?: number | null
 ): TripPlan {
   const graph = graphFor(kb);
-  let { origin, destination } = parseTrip(userTexts[userTexts.length - 1] ?? "");
+  const latest = userTexts[userTexts.length - 1] ?? "";
+  // Endpoints read straight off known stop names — the most trustworthy signal.
+  const named = parseTrip(latest);
+  let { origin, destination } = named;
   let originSource: TripPlan["originSource"] = origin ? "text" : null;
 
   // A street or landmark the rider named, resolved to the stop that serves it.
@@ -565,9 +674,27 @@ export function planTrip(
   }
   if (places?.destination) destination = places.destination.stop;
 
-  // "How do I get to Ikeja?" with live location on: start from the nearest stop.
-  if (!origin && destination && location) {
-    const near = nearestStop(location, 8);
+  // Spelling slips: "ikorodo to ikaja" still means Ikorodu to Ikeja.
+  if (!origin || !destination) {
+    const phrases = extractPlacePhrases(latest);
+    if (!origin && phrases.origin && !places?.origin) {
+      const near = fuzzyFindStop(phrases.origin);
+      if (near && near.name !== destination) {
+        origin = near.name;
+        originSource = "text";
+      }
+    }
+    if (!destination && phrases.destination && !places?.destination) {
+      const near = fuzzyFindStop(phrases.destination);
+      if (near && near.name !== origin) destination = near.name;
+    }
+  }
+
+  // "How do I get to Ikeja?" with live location on: start from the nearest
+  // stop — but only when the fix is sharp enough to mean something.
+  const usableFix = !!location && (accuracy == null || accuracy <= COARSE_LOCATION_M);
+  if (!origin && destination && location && usableFix) {
+    const near = nearestStop(location, LOCATION_SNAP_KM);
     if (near && near.name !== destination) {
       origin = near.name;
       originSource = "location";
@@ -591,16 +718,47 @@ export function planTrip(
     origin,
     destination,
     originSource,
+    status: "no-trip",
     substitutions: [],
     best: null,
     alternatives: [],
     places,
   };
-  if (!origin || !destination || origin === destination) return plan;
+
+  // A city DanfoAI doesn't cover: say so rather than routing to a Lagos street
+  // that happens to share the name. Refused when the rider put that city at
+  // either end of the trip, or when nothing routable was found at all — so
+  // "I just flew in from Abuja, Yaba to Lekki please" still gets planned.
+  // Both ends matched real Lagos stops, so a city mentioned in passing ("I just
+  // came from Abuja, Yaba to Lekki") doesn't block the trip. Anything less and
+  // the out-of-area name is taken at face value.
+  const outside = outOfAreaPlace(latest);
+  if (outside && !(named.origin && named.destination)) {
+    plan.status = "out-of-area";
+    plan.outOfArea = outside;
+    return plan;
+  }
+
+  if (origin && destination && origin === destination) {
+    plan.status = "same-place";
+    return plan;
+  }
+  if (!origin && !destination) return plan;
+  if (!origin) {
+    plan.status = "need-origin";
+    return plan;
+  }
+  if (!destination) {
+    plan.status = "need-destination";
+    return plan;
+  }
 
   const from = snapToNetwork(graph, origin);
   const to = snapToNetwork(graph, destination);
-  if (!from || !to || from.used === to.used) return plan;
+  if (!from || !to || from.used === to.used) {
+    plan.status = from && to && from.used === to.used ? "same-place" : "no-connection";
+    return plan;
+  }
   for (const [requested, snap] of [
     [origin, from],
     [destination, to],
@@ -613,6 +771,7 @@ export function planTrip(
   const { best, alternatives } = planRoute(graph, from.used, to.used);
   plan.best = best ? withAccessLegs(best, places) : null;
   plan.alternatives = alternatives.map((a) => withAccessLegs(a, places));
+  plan.status = plan.best ? "ok" : "no-connection";
   return plan;
 }
 

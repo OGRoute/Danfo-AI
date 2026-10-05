@@ -24,7 +24,7 @@ interface Props {
   itineraries: Itinerary[];
   /** Stops mentioned in chat, highlighted when there's no itinerary. */
   stops: string[];
-  onPosition?: (pos: LatLng) => void;
+  onPosition?: (pos: LatLng, accuracy?: number) => void;
   /** Start with GPS on (rider preference; defaults to on). */
   liveLocation?: boolean;
   /** Start following the rider's position. */
@@ -35,22 +35,30 @@ interface Props {
 
 interface Fix {
   pos: LatLng;
+  /** Radius in metres the true position lies within, as the browser reports it. */
   accuracy: number;
   heading: number | null;
   source: "gps" | "sim";
+  /** When this fix arrived, for preferring a fresh sharp fix over a vague one. */
+  at?: number;
 }
 
 const MODE_COLOR: Record<string, string> = {
   walk: "#6b7280",
   danfo: "#e0b000",
   brt: "#0050b3",
+  lamata: "#7c3aed",
   ferry: "#0e9f9a",
   keke: "#16a34a",
 };
 // Typical Lagos speeds, for ETA on legs without a published journey time.
-const MODE_KMH: Record<string, number> = { walk: 4.5, danfo: 14, brt: 20, rail: 40, ferry: 25, keke: 12 };
+const MODE_KMH: Record<string, number> = { walk: 4.5, danfo: 14, brt: 20, lamata: 18, rail: 40, ferry: 25, keke: 12 };
 // Further than this from the line counts as off route.
 const OFF_ROUTE_M = 300;
+
+/** "80 m" / "2.1 km" — how precise the fix actually is. */
+const formatAccuracy = (m: number) =>
+  m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
 
 // Base map tiles. OpenStreetMap by default: free, no key, street names at
 // high zoom. Override for a commercial provider if the traffic grows.
@@ -252,6 +260,17 @@ function useLegGeometries(legs: TripLeg[]): LatLng[][] {
   return geoms;
 }
 
+/**
+ * Beyond this, a fix is a neighbourhood rather than a position — typically a
+ * Wi-Fi or IP lookup when precise location is off, or a laptop indoors. Riders
+ * told us the map "misrepresented my position", and this is why: a ±2 km fix
+ * was drawn as a confident blue dot. Now it is shown, and used, as the rough
+ * area it is.
+ */
+const COARSE_ACCURACY_M = 500;
+/** A good recent fix isn't thrown away for a much vaguer one. */
+const FIX_FRESH_MS = 30_000;
+
 function useGeolocation(enabled: boolean) {
   const [fix, setFix] = useState<Fix | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -271,14 +290,29 @@ function useGeolocation(enabled: boolean) {
         setError(null);
         setFix((prev) => {
           const pos: LatLng = [p.coords.latitude, p.coords.longitude];
+          const accuracy = p.coords.accuracy;
+          // Browsers interleave a coarse network fix with good GPS ones; a
+          // fresh, sharper fix is kept rather than replaced by the vague one.
+          if (
+            prev &&
+            prev.source === "gps" &&
+            Date.now() - (prev.at ?? 0) < FIX_FRESH_MS &&
+            accuracy > prev.accuracy * 3 &&
+            accuracy > COARSE_ACCURACY_M
+          ) {
+            return prev;
+          }
           const moving = (p.coords.speed ?? 0) > 0.5;
           let heading =
             moving && p.coords.heading != null && Number.isFinite(p.coords.heading)
               ? p.coords.heading
               : null;
-          // No compass heading: derive it from movement.
-          if (heading === null && prev) heading = metres(prev.pos, pos) > 4 ? bearing(prev.pos, pos) : prev.heading;
-          return { pos, accuracy: p.coords.accuracy, heading, source: "gps" };
+          // No compass heading: derive it from movement. A coarse fix "moves"
+          // when nothing moved, so its drift is never read as a direction.
+          if (heading === null && prev && accuracy <= COARSE_ACCURACY_M) {
+            heading = metres(prev.pos, pos) > 4 ? bearing(prev.pos, pos) : prev.heading;
+          }
+          return { pos, accuracy, heading, source: "gps", at: Date.now() };
         });
       },
       (e) =>
@@ -314,7 +348,7 @@ function useSimulation(line: RouteLine | null, running: boolean): Fix | null {
       if (now - lastPaint > 50 || along >= line.total) {
         lastPaint = now;
         const { pos, heading } = pointAt(line, along);
-        setFix({ pos, accuracy: 5, heading, source: "sim" });
+        setFix({ pos, accuracy: 5, heading, source: "sim", at: Date.now() });
       }
       if (along < line.total) raf = requestAnimationFrame(frame);
     };
@@ -375,13 +409,14 @@ function FollowFix({ fix, follow, onUserMove }: { fix: Fix | null; follow: boole
   return null;
 }
 
-function riderIcon(heading: number | null, simulated: boolean): L.DivIcon {
-  const cone = heading === null ? "" : `<span class="rm-me-cone" style="transform:rotate(${heading}deg)"></span>`;
+function riderIcon(heading: number | null, simulated: boolean, coarse = false): L.DivIcon {
+  const cone = heading === null || coarse ? "" : `<span class="rm-me-cone" style="transform:rotate(${heading}deg)"></span>`;
+  const dot = `rm-me-dot${simulated ? " sim" : ""}${coarse ? " coarse" : ""}`;
   return L.divIcon({
     className: "rm-me",
     iconSize: [30, 30],
     iconAnchor: [15, 15],
-    html: `<span class="rm-me-pulse"></span>${cone}<span class="rm-me-dot${simulated ? " sim" : ""}"></span>`,
+    html: `${coarse ? "" : '<span class="rm-me-pulse"></span>'}<span class="${dot}"></span>`,
   });
 }
 
@@ -428,7 +463,7 @@ export default function RouteMap({
     onPositionRef.current = onPosition;
   });
   useEffect(() => {
-    if (gps.fix) onPositionRef.current?.(gps.fix.pos);
+    if (gps.fix) onPositionRef.current?.(gps.fix.pos, gps.fix.accuracy);
   }, [gps.fix]);
 
   const progress = useMemo(
@@ -438,7 +473,11 @@ export default function RouteMap({
 
   // Round the heading so the icon isn't rebuilt on every tiny change.
   const heading = fix?.heading == null ? null : Math.round(fix.heading / 10) * 10;
-  const meIcon = useMemo(() => riderIcon(heading, fix?.source === "sim"), [heading, fix?.source]);
+  const coarse = !!fix && fix.source === "gps" && fix.accuracy > COARSE_ACCURACY_M;
+  const meIcon = useMemo(
+    () => riderIcon(heading, fix?.source === "sim", coarse),
+    [heading, fix?.source, coarse]
+  );
   const boardIcons = useMemo(() => legs.map((leg, i) => badgeIcon(String(i + 1), legColor(leg))), [legs]);
   const finishIcon = useMemo(() => badgeIcon("🏁", "#111111"), []);
 
@@ -567,7 +606,17 @@ export default function RouteMap({
               <Circle
                 center={fix.pos}
                 radius={fix.accuracy}
-                pathOptions={{ color: "#2563eb", weight: 1, fillColor: "#3b82f6", fillOpacity: 0.12 }}
+                pathOptions={
+                  coarse
+                    ? {
+                        color: "#6b7280",
+                        weight: 1,
+                        dashArray: "5 5",
+                        fillColor: "#6b7280",
+                        fillOpacity: 0.08,
+                      }
+                    : { color: "#2563eb", weight: 1, fillColor: "#3b82f6", fillOpacity: 0.12 }
+                }
               />
             )}
             <Marker position={fix.pos} icon={meIcon} zIndexOffset={1000} interactive={false} />
@@ -583,7 +632,16 @@ export default function RouteMap({
           aria-pressed={tracking}
           title="Show my live location"
         >
-          📍<span>{tracking ? (gps.fix ? "Live" : "Locating…") : "Location off"}</span>
+          📍
+          <span>
+            {!tracking
+              ? "Location off"
+              : !gps.fix
+                ? "Locating…"
+                : coarse
+                  ? `Approximate ±${formatAccuracy(gps.fix.accuracy)}`
+                  : `Live ±${formatAccuracy(gps.fix.accuracy)}`}
+          </span>
         </button>
         <button
           type="button"
@@ -611,6 +669,13 @@ export default function RouteMap({
       </div>
 
       {gps.error && !sim && <div className="rm-toast">{gps.error}</div>}
+      {!gps.error && coarse && !sim && (
+        <div className="rm-toast">
+          Your browser only knows roughly where you are (±{formatAccuracy(fix!.accuracy)}), so this
+          is the area you're in, not your exact spot. On a phone, turn on precise location for this
+          site; indoors, step outside for a GPS fix.
+        </div>
+      )}
 
       {itinerary ? (
         <div className="rm-sheet">
@@ -841,6 +906,12 @@ export default function RouteMap({
           color: var(--text-muted);
           line-height: 1.35;
         }
+        /* A coarse fix is a grey, unpulsing dot — it isn't a position. */
+        :global(.rm-me-dot.coarse) {
+          background: #6b7280;
+          box-shadow: 0 0 0 2px #ffffff;
+        }
+
         /* Rider marker: pulsing blue dot with a heading cone. */
         .rm-me {
           position: relative;

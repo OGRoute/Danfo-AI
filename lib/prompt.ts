@@ -39,6 +39,12 @@ export interface KBRoute {
   wait?: number;
   /** Fare or boarding point was corrected by riders (see lib/corrections.ts). */
   communityCorrected?: boolean;
+  /** Fare is the operator's published fare, not an estimate or a rider report. */
+  official?: boolean;
+  /** Riders reported this route as wrong often enough to demote it. */
+  disputed?: boolean;
+  /** Where an official fare comes from, e.g. the LAMATA fare table. */
+  fareSource?: string;
   notes?: string;
 }
 
@@ -55,6 +61,7 @@ export interface RouteKB {
 
 const VEHICLE_NAME: Record<string, string> = {
   danfo: "danfo (yellow bus)",
+  lamata: "LAMATA blue bus",
   brt: "BRT bus",
   rail: "train",
   ferry: "ferry",

@@ -19,7 +19,7 @@ interface Props {
   /** Stops mentioned in chat, shown when there is no computed trip. */
   stops: string[];
   /** Live GPS position updates, so chat can plan from where the rider is. */
-  onPosition?: (pos: LatLng) => void;
+  onPosition?: (pos: LatLng, accuracy?: number) => void;
   /** Ask for GPS as soon as the map opens (rider preference). */
   liveLocation?: boolean;
   /** Keep the map centred on the rider (rider preference). */

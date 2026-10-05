@@ -7,6 +7,7 @@ export const MODE_ICON: Record<string, string> = {
   walk: "🚶",
   danfo: "🚐",
   brt: "🚌",
+  lamata: "🚍",
   rail: "🚆",
   ferry: "⛴️",
   keke: "🛺",
@@ -25,7 +26,7 @@ interface Labels {
 }
 
 const EN_LABELS: Labels = {
-  mode: { danfo: "Danfo", brt: "BRT", rail: "Train", ferry: "Ferry", keke: "Keke", walk: "Walk" },
+  mode: { danfo: "Danfo", brt: "BRT", lamata: "LAMATA bus", rail: "Train", ferry: "Ferry", keke: "Keke", walk: "Walk" },
   vehicles: (n) => (n === 1 ? "1 leg" : `${n} legs`),
   board: "Board",
   off: "Get off",
@@ -49,7 +50,7 @@ const LABELS: Record<LangCode, Labels> = {
     approximate: "Fare fit change",
   },
   yo: {
-    mode: { danfo: "Danfo", brt: "BRT", rail: "Ọkọ̀ ojú irin", ferry: "Ọkọ̀ ojú omi", keke: "Kẹ̀kẹ́", walk: "Ìrìn" },
+    mode: { danfo: "Danfo", brt: "BRT", lamata: "Ọkọ̀ LAMATA", rail: "Ọkọ̀ ojú irin", ferry: "Ọkọ̀ ojú omi", keke: "Kẹ̀kẹ́", walk: "Ìrìn" },
     vehicles: (n) => `ìpele ${n}`,
     board: "Wọ̀ ní",
     off: "Bọ́lẹ̀ ní",
@@ -60,7 +61,7 @@ const LABELS: Record<LangCode, Labels> = {
     map: "🗺️ Máàpù",
   },
   ig: {
-    mode: { danfo: "Danfo", brt: "BRT", rail: "Ụgbọ oloko", ferry: "Ụgbọ mmiri", keke: "Keke", walk: "Ije ụkwụ" },
+    mode: { danfo: "Danfo", brt: "BRT", lamata: "Ụgbọ LAMATA", rail: "Ụgbọ oloko", ferry: "Ụgbọ mmiri", keke: "Keke", walk: "Ije ụkwụ" },
     vehicles: (n) => `nzọụkwụ ${n}`,
     board: "Banye na",
     off: "Rịdata na",
@@ -71,7 +72,7 @@ const LABELS: Record<LangCode, Labels> = {
     map: "🗺️ Maapụ",
   },
   ha: {
-    mode: { danfo: "Danfo", brt: "BRT", rail: "Jirgin ƙasa", ferry: "Jirgin ruwa", keke: "Keke napep", walk: "Tafiya" },
+    mode: { danfo: "Danfo", brt: "BRT", lamata: "Motar LAMATA", rail: "Jirgin ƙasa", ferry: "Jirgin ruwa", keke: "Keke napep", walk: "Tafiya" },
     vehicles: (n) => `matakai ${n}`,
     board: "Hau a",
     off: "Sauka a",

@@ -1,95 +1,116 @@
 {
-  "version": 3,
-  "updatedAt": "2026-09-22",
+  "version": 4,
+  "updatedAt": "2026-10-05",
   "currency": "NGN",
   "note": "Knowledge base for DanfoAI: LAMATA BRT and rail plus the local danfo, korope, keke and ferry network riders actually use. Community corrections on 0G Chain keep it current.",
-  "fareNote": "2026 fare estimates: LAMATA's published BRT and rail fares, and rider-reported danfo/keke/ferry fares. Local fares rise at rush hour, in rain and during fuel scarcity, and conductors round up. BRT, Blue Line, Red Line and LAGFERRY are cashless — pay with a Cowry card; danfo, korope and keke are cash.",
+  "fareNote": "BRT and LAMATA blue-bus fares are the official published fares effective 2 March 2026 (13% adjustment) and are charged exactly by Cowry card. Danfo and keke fares are cash, negotiated, and move with fuel price, traffic and time of day, so they are given as ranges.",
   "stops": [
-    "Ikorodu",
-    "Owode Onirin",
-    "Mile 12",
-    "Ketu",
-    "Ojota",
-    "Maryland",
-    "Anthony",
-    "Fadeyi",
-    "Yaba",
-    "Oyingbo",
-    "TBS",
-    "Oshodi",
-    "Ikeja",
-    "CMS",
-    "Bolade",
-    "Iyana Ipaja",
-    "Abule Egba",
-    "Berger",
-    "Obalende",
-    "Marina",
-    "Victoria Island",
-    "Lekki Phase 1",
-    "Ajah",
-    "Mile 2",
-    "Orile Iganmu",
-    "Badagry",
-    "Festac",
-    "National Theatre",
-    "Suru Alaba",
-    "Agbado",
-    "Iju",
-    "Agege",
-    "Shogunle",
-    "Mushin",
-    "Ikorodu Ferry Terminal",
-    "Falomo",
-    "Costain",
-    "Ojuelegba",
-    "Iddo",
-    "Surulere",
-    "Cele",
-    "Ikotun",
-    "Egbeda",
-    "Chevron",
-    "VGC",
+    "Abesan",
     "Abraham Adesanya",
-    "Sangotedo",
-    "Awoyaya",
-    "Eputu",
-    "Lakowe",
-    "Ibeju-Lekki",
-    "Epe",
-    "Badore",
-    "Ijede",
-    "Idumota",
-    "Ebute Ero",
-    "Ijora",
-    "Apapa",
-    "Palmgrove",
-    "Isolo",
-    "Ejigbo",
-    "Igando",
-    "Ogba",
-    "Bariga",
-    "Oworonshoki",
-    "Gbagada",
-    "Agric",
-    "Imota",
-    "Alakija",
-    "Agboju",
-    "Satellite Town",
-    "Trade Fair",
-    "Iyana Iba",
-    "Alaba",
-    "Okokomaiko",
+    "Abule Egba",
+    "Agbado",
     "Agbara",
-    "Ojodu",
+    "Agboju",
+    "Agege",
+    "Agric",
+    "Ajah",
     "Akute",
+    "Alaba",
+    "Alakija",
+    "Alausa",
+    "Anthony",
+    "Apapa",
     "Arepo",
-    "Magboro",
+    "Awoyaya",
+    "Ayobo",
+    "Badagry",
+    "Badore",
+    "Bariga",
+    "Barracks",
+    "Baruwa",
+    "Berger",
+    "Bolade",
+    "CMS",
+    "Cele",
+    "Chevron",
+    "Command",
+    "Costain",
+    "Dalemo",
+    "Dopemu",
+    "Ebute Ero",
+    "Egbeda",
+    "Ejigbo",
+    "Elepe",
+    "Epe",
+    "Eputu",
+    "Fadeyi",
+    "Falomo",
+    "Festac",
+    "Gbagada",
     "Ibafo",
+    "Ibeju-Lekki",
+    "Iddo",
+    "Idumota",
+    "Ifako Ijaiye",
+    "Ifo",
+    "Igando",
+    "Igbogbo",
+    "Ijede",
+    "Ijora",
+    "Iju",
+    "Ikeja",
+    "Ikola",
+    "Ikorodu",
+    "Ikorodu Ferry Terminal",
+    "Ikotun",
+    "Imota",
+    "Isolo",
+    "Iyana Iba",
+    "Iyana Ipaja",
+    "Joke Ayo",
+    "Ketu",
+    "Kola",
+    "Lakowe",
+    "Lekki Phase 1",
+    "Magboro",
+    "Marina",
+    "Maryland",
+    "Maya",
+    "Mile 12",
+    "Mile 2",
     "Mowe",
+    "Mushin",
+    "National Theatre",
+    "Obalende",
+    "Odogunyan",
+    "Ogba",
+    "Ojo",
+    "Ojodu",
+    "Ojota",
+    "Ojuelegba",
+    "Okokomaiko",
+    "Orelope",
+    "Orile Iganmu",
+    "Oshodi",
+    "Owode Onirin",
+    "Oworonshoki",
+    "Oyingbo",
+    "Palmgrove",
     "Redemption Camp",
     "Sango Ota",
-    "Ifo"
+    "Sangotedo",
+    "Satellite Town",
+    "Shasha",
+    "Shogunle",
+    "Suru Alaba",
+    "Surulere",
+    "TBS",
+    "Tinubu",
+    "Tollgate",
+    "Trade Fair",
+    "VGC",
+    "Victoria Island",
+    "Yaba"
   ],
   "routes": [
     {
@@ -97,14 +118,14 @@
       "to": "TBS",
       "mode": "brt",
       "fare": [
-        900,
-        1000
+        960,
+        960
       ],
       "duration": [
         75,
         120
       ],
-      "line": "LAMATA BRT — Ikorodu–TBS corridor",
+      "line": "LAMATA BRT",
       "via": [
         "Owode Onirin",
         "Mile 12",
@@ -118,15 +139,18 @@
       ],
       "board": "Ikorodu BRT Terminal by Ikorodu Garage/roundabout — buy or top up a Cowry card at the ticket window and tap in at the gate",
       "boardReverse": "TBS BRT Terminal at Tafawa Balewa Square (Onikan side) — tap your Cowry card at the gate",
-      "notes": "LAMATA fare ~₦960 (2026). Cowry card only (buy/top up at the terminal). Dedicated BRT lane — fastest road option into the Island at rush hour; long queues at Ikorodu 6–8am."
+      "notes": "LAMATA fare ~₦960 (2026). Cowry card only (buy/top up at the terminal). Dedicated BRT lane — fastest road option into the Island at rush hour; long queues at Ikorodu 6–8am.",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
     },
     {
       "from": "Ikorodu",
       "to": "Oshodi",
       "mode": "brt",
       "fare": [
-        650,
-        700
+        680,
+        680
       ],
       "duration": [
         60,
@@ -140,17 +164,20 @@
         "Ojota",
         "Maryland"
       ],
-      "board": "Ikorodu BRT Terminal by Ikorodu Garage",
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
       "boardReverse": "Oshodi Transport Interchange — ask for the Ikorodu BRT bay",
-      "notes": "LAMATA fare ~₦680 (2026). Cowry card only (buy/top up at the terminal)."
+      "notes": "LAMATA fare ~₦680 (2026). Cowry card only (buy/top up at the terminal).",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
     },
     {
       "from": "Ikorodu",
       "to": "Ikeja",
       "mode": "brt",
       "fare": [
-        650,
-        700
+        680,
+        680
       ],
       "duration": [
         60,
@@ -163,9 +190,12 @@
         "Ketu",
         "Ojota"
       ],
-      "board": "Ikorodu BRT Terminal by Ikorodu Garage",
-      "boardReverse": "Ikeja Bus Terminal (Ikeja Under Bridge, Obafemi Awolowo Way)",
-      "notes": "LAMATA fare ~₦680 (2026). Cowry card only (buy/top up at the terminal)."
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Ikeja BRT terminal — tap your Cowry card at the gate",
+      "notes": "LAMATA fare ~₦680 (2026). Cowry card only (buy/top up at the terminal).",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
     },
     {
       "from": "Mile 12",
@@ -219,42 +249,48 @@
       "to": "Abule Egba",
       "mode": "brt",
       "fare": [
-        500,
-        700
+        680,
+        680
       ],
       "duration": [
         35,
         60
       ],
-      "line": "LAMATA BRT — Oshodi–Abule Egba corridor",
+      "line": "LAMATA BRT",
       "via": [
         "Bolade",
         "Ikeja",
         "Iyana Ipaja"
       ],
       "board": "Oshodi Transport Interchange — Abule Egba BRT bay",
-      "boardReverse": "Abule Egba BRT Terminal by the Abule Egba flyover",
-      "notes": "LAMATA fare ~₦680 end to end (2026). Cowry card only (buy/top up at the terminal)."
+      "boardReverse": "Abule Egba BRT terminal — tap your Cowry card at the gate",
+      "notes": "LAMATA fare ~₦680 end to end (2026). Cowry card only (buy/top up at the terminal).",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
     },
     {
       "from": "Abule Egba",
       "to": "Ikeja",
       "mode": "brt",
       "fare": [
-        500,
-        600
+        560,
+        560
       ],
       "duration": [
         25,
         45
       ],
-      "line": "LAMATA BRT — Oshodi–Abule Egba corridor",
+      "line": "LAMATA BRT",
       "via": [
         "Iyana Ipaja"
       ],
-      "board": "Abule Egba BRT Terminal by the Abule Egba flyover",
-      "boardReverse": "Ikeja Along BRT station on the Lagos–Abeokuta Expressway",
-      "notes": "LAMATA fare ~₦560 (2026). Cowry card only (buy/top up at the terminal)."
+      "board": "Abule Egba BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Ikeja BRT terminal — tap your Cowry card at the gate",
+      "notes": "LAMATA fare ~₦560 (2026). Cowry card only (buy/top up at the terminal).",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
     },
     {
       "from": "Oshodi",
@@ -296,7 +332,7 @@
     {
       "from": "Berger",
       "to": "CMS",
-      "mode": "brt",
+      "mode": "lamata",
       "fare": [
         500,
         700
@@ -318,105 +354,120 @@
     {
       "from": "Ikeja",
       "to": "Obalende",
-      "mode": "brt",
+      "mode": "lamata",
       "fare": [
-        650,
-        750
+        720,
+        720
       ],
       "duration": [
         60,
         90
       ],
-      "line": "LAMATA BRT",
+      "line": "LAMATA standard route (blue bus)",
       "via": [
         "Maryland"
       ],
-      "board": "Ikeja Bus Terminal (Ikeja Under Bridge)",
-      "boardReverse": "Obalende BRT stop by Obalende under-bridge",
-      "notes": "LAMATA fare ~₦720 (2026). Cowry card only (buy/top up at the terminal)."
+      "board": "Ikeja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "notes": "LAMATA fare ~₦720 (2026). Cowry card only (buy/top up at the terminal).",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
     },
     {
       "from": "Marina",
       "to": "Lekki Phase 1",
-      "mode": "brt",
+      "mode": "lamata",
       "fare": [
-        550,
-        600
+        570,
+        570
       ],
       "duration": [
         30,
         60
       ],
-      "line": "LAMATA BRT — Lekki–Epe corridor",
+      "line": "LAMATA standard route (blue bus)",
       "via": [
         "Obalende",
         "Victoria Island"
       ],
-      "board": "Marina BRT stop (CMS end of Marina)",
-      "boardReverse": "Lekki Phase 1 BRT stop at Lekki first gate",
-      "notes": "LAMATA fare ~₦570 (2026). Cowry card only (buy/top up at the terminal). Lekki–Epe Expressway jams 4–8pm outbound."
+      "board": "Marina LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Lekki Phase 1 LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "notes": "LAMATA fare ~₦570 (2026). Cowry card only (buy/top up at the terminal). Lekki–Epe Expressway jams 4–8pm outbound.",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
     },
     {
       "from": "Marina",
       "to": "Ajah",
-      "mode": "brt",
+      "mode": "lamata",
       "fare": [
-        900,
-        950
+        920,
+        920
       ],
       "duration": [
         60,
         120
       ],
-      "line": "LAMATA BRT — Lekki–Epe corridor",
+      "line": "LAMATA standard route (blue bus)",
       "via": [
         "Obalende",
         "Victoria Island",
         "Lekki Phase 1"
       ],
-      "board": "Marina BRT stop (CMS end of Marina)",
-      "boardReverse": "Ajah BRT stop by Ajah under-bridge",
-      "notes": "LAMATA fare ~₦920 (2026). Cowry card only (buy/top up at the terminal)."
+      "board": "Marina LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Ajah LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "notes": "LAMATA fare ~₦920 (2026). Cowry card only (buy/top up at the terminal).",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
     },
     {
       "from": "Mile 2",
       "to": "TBS",
       "mode": "brt",
       "fare": [
-        400,
-        500
+        680,
+        680
       ],
       "duration": [
         35,
         60
       ],
-      "line": "LAMATA BRT — Lagos–Badagry corridor",
+      "line": "LAMATA BRT",
       "via": [
         "Orile Iganmu"
       ],
-      "board": "Mile 2 BRT station on the Lagos–Badagry Expressway",
-      "boardReverse": "TBS BRT Terminal",
-      "notes": "Cowry card only (buy/top up at the terminal). The Blue Line train on the same corridor is usually faster."
+      "board": "Mile 2 BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "TBS BRT terminal — tap your Cowry card at the gate",
+      "notes": "Cowry card only (buy/top up at the terminal). The Blue Line train on the same corridor is usually faster.",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
     },
     {
       "from": "Badagry",
       "to": "Mile 2",
-      "mode": "brt",
+      "mode": "lamata",
       "fare": [
-        1100,
-        1150
+        1140,
+        1140
       ],
       "duration": [
         60,
         120
       ],
-      "line": "LAMATA BRT — Lagos–Badagry corridor",
+      "line": "LAMATA standard route (blue bus)",
       "via": [
         "Festac"
       ],
-      "board": "Badagry Roundabout BRT stop",
-      "boardReverse": "Mile 2 BRT station",
-      "notes": "LAMATA fare ~₦1,140 (2026). Cowry card only (buy/top up at the terminal)."
+      "board": "Badagry LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Mile 2 LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "notes": "LAMATA fare ~₦1,140 (2026). Cowry card only (buy/top up at the terminal).",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
     },
     {
       "from": "Marina",
@@ -682,8 +733,8 @@
       "to": "Ajah",
       "mode": "danfo",
       "fare": [
-        800,
-        1200
+        500,
+        800
       ],
       "duration": [
         60,
@@ -695,15 +746,16 @@
       ],
       "board": "Obalende under-bridge park — Ajah buses",
       "boardReverse": "Ajah under-bridge park",
-      "notes": "Lekki–Epe Expressway is slow 4–8pm."
+      "notes": "Lekki–Epe Expressway is slow 4–8pm.",
+      "fareSource": "Rider reports and public Lagos fare guides, October 2026"
     },
     {
       "from": "Ajah",
       "to": "CMS",
       "mode": "danfo",
       "fare": [
-        900,
-        1300
+        700,
+        1000
       ],
       "duration": [
         70,
@@ -716,7 +768,8 @@
       ],
       "board": "Ajah under-bridge park (by the Ajah flyover on Lekki–Epe Expressway)",
       "boardReverse": "CMS bus stop (Marina side)",
-      "notes": "Long route; many riders change at Obalende."
+      "notes": "Long route; many riders change at Obalende.",
+      "fareSource": "Rider reports and public Lagos fare guides, October 2026"
     },
     {
       "from": "Mile 2",
@@ -1034,8 +1087,8 @@
       "to": "Ajah",
       "mode": "danfo",
       "fare": [
-        600,
-        900
+        450,
+        700
       ],
       "duration": [
         45,
@@ -1048,7 +1101,8 @@
       ],
       "board": "Ozumba Mbadiwe Avenue bus stop — buses shouting 'Ajah!'",
       "boardReverse": "Ajah under-bridge park",
-      "notes": "Lekki–Epe Expressway. Tolls and evening traffic add time."
+      "notes": "Lekki–Epe Expressway. Tolls and evening traffic add time.",
+      "fareSource": "Rider reports and public Lagos fare guides, October 2026"
     },
     {
       "from": "Lekki Phase 1",
@@ -2018,6 +2072,1396 @@
       "board": "Ikeja Under Bridge bus stop — buses shouting 'Sango!'",
       "boardReverse": "Sango Ota park by the bridge",
       "notes": "Along the Lagos–Abeokuta Expressway."
+    },
+    {
+      "from": "Oshodi",
+      "to": "Ayobo",
+      "mode": "brt",
+      "fare": [
+        890,
+        890
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Ikeja",
+        "Iyana Ipaja"
+      ],
+      "board": "Oshodi BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Ayobo BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Oshodi",
+      "to": "Command",
+      "mode": "brt",
+      "fare": [
+        890,
+        890
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Ikeja",
+        "Iyana Ipaja"
+      ],
+      "board": "Oshodi BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Command BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Oshodi",
+      "to": "Ikola",
+      "mode": "brt",
+      "fare": [
+        890,
+        890
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Ikeja",
+        "Iyana Ipaja",
+        "Command"
+      ],
+      "board": "Oshodi BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Ikola BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Oshodi",
+      "to": "Tollgate",
+      "mode": "brt",
+      "fare": [
+        970,
+        970
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Ikeja",
+        "Iyana Ipaja",
+        "Abule Egba",
+        "Kola"
+      ],
+      "board": "Oshodi BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Tollgate BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Abule Egba",
+      "to": "TBS",
+      "mode": "brt",
+      "fare": [
+        1080,
+        1080
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Iyana Ipaja",
+        "Ikeja",
+        "Oshodi",
+        "CMS"
+      ],
+      "board": "Abule Egba BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "TBS BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Yaba",
+      "mode": "brt",
+      "fare": [
+        910,
+        910
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Fadeyi"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Yaba BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Oyingbo",
+      "mode": "brt",
+      "fare": [
+        910,
+        910
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Fadeyi",
+        "Yaba"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Oyingbo BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Costain",
+      "mode": "brt",
+      "fare": [
+        910,
+        910
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Fadeyi",
+        "Yaba"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Costain BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Barracks",
+      "mode": "brt",
+      "fare": [
+        910,
+        910
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Fadeyi"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Barracks BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Fadeyi",
+      "mode": "brt",
+      "fare": [
+        680,
+        680
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Anthony"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Fadeyi BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Maryland",
+      "mode": "brt",
+      "fare": [
+        570,
+        570
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Mile 12",
+        "Ketu",
+        "Ojota"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Maryland BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Ojota",
+      "mode": "brt",
+      "fare": [
+        570,
+        570
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Mile 12",
+        "Ketu"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Ojota BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Ketu",
+      "mode": "brt",
+      "fare": [
+        570,
+        570
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Owode Onirin",
+        "Mile 12"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Ketu BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Mile 12",
+      "mode": "brt",
+      "fare": [
+        450,
+        450
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Owode Onirin"
+      ],
+      "board": "Ikorodu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Mile 12 BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ketu",
+      "to": "TBS",
+      "mode": "brt",
+      "fare": [
+        680,
+        680
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Ojota",
+        "Maryland",
+        "Fadeyi",
+        "Yaba",
+        "Costain",
+        "CMS"
+      ],
+      "board": "Ketu BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "TBS BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Ojo",
+      "to": "Mile 2",
+      "mode": "brt",
+      "fare": [
+        510,
+        510
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Alaba",
+        "Trade Fair",
+        "Satellite Town"
+      ],
+      "board": "Ojo BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Mile 2 BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Okokomaiko",
+      "to": "Oyingbo",
+      "mode": "brt",
+      "fare": [
+        910,
+        910
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Ojo",
+        "Trade Fair",
+        "Mile 2",
+        "Orile Iganmu"
+      ],
+      "board": "Okokomaiko BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Oyingbo BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Okokomaiko",
+      "to": "Mile 2",
+      "mode": "brt",
+      "fare": [
+        510,
+        510
+      ],
+      "line": "LAMATA BRT",
+      "via": [
+        "Ojo",
+        "Alaba",
+        "Trade Fair"
+      ],
+      "board": "Okokomaiko BRT terminal — tap your Cowry card at the gate",
+      "boardReverse": "Mile 2 BRT terminal — tap your Cowry card at the gate",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 10
+    },
+    {
+      "from": "Igando",
+      "to": "Obalende",
+      "mode": "lamata",
+      "fare": [
+        1140,
+        1140
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikotun",
+        "Cele",
+        "CMS"
+      ],
+      "board": "Igando LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Baruwa",
+      "to": "Oshodi",
+      "mode": "lamata",
+      "fare": [
+        800,
+        800
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Iyana Ipaja",
+        "Ikeja"
+      ],
+      "board": "Baruwa LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Egbeda",
+      "to": "Obalende",
+      "mode": "lamata",
+      "fare": [
+        1030,
+        1030
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja",
+        "Oshodi",
+        "CMS"
+      ],
+      "board": "Egbeda LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Iyana Ipaja",
+      "to": "Obalende",
+      "mode": "lamata",
+      "fare": [
+        1090,
+        1090
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja",
+        "Oshodi",
+        "CMS"
+      ],
+      "board": "Iyana Ipaja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Odogunyan",
+      "to": "Oshodi",
+      "mode": "lamata",
+      "fare": [
+        920,
+        920
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikorodu",
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland"
+      ],
+      "board": "Odogunyan LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Odogunyan",
+      "to": "CMS",
+      "mode": "lamata",
+      "fare": [
+        1140,
+        1140
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikorodu",
+        "Mile 12",
+        "Ketu",
+        "Maryland",
+        "Yaba"
+      ],
+      "board": "Odogunyan LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "CMS LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Joke Ayo",
+      "to": "Oshodi",
+      "mode": "lamata",
+      "fare": [
+        920,
+        920
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Agric",
+        "Mile 12",
+        "Ketu",
+        "Maryland"
+      ],
+      "board": "Joke Ayo LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Joke Ayo",
+      "to": "Yaba",
+      "mode": "lamata",
+      "fare": [
+        1030,
+        1030
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Agric",
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Fadeyi"
+      ],
+      "board": "Joke Ayo LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Yaba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ifako Ijaiye",
+      "to": "Yaba",
+      "mode": "lamata",
+      "fare": [
+        920,
+        920
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Agege",
+        "Ikeja",
+        "Oshodi",
+        "Mushin"
+      ],
+      "board": "Ifako Ijaiye LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Yaba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikotun",
+      "to": "Yaba",
+      "mode": "lamata",
+      "fare": [
+        940,
+        940
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Cele",
+        "Mushin"
+      ],
+      "board": "Ikotun LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Yaba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Oshodi",
+      "to": "Shasha",
+      "mode": "lamata",
+      "fare": [
+        570,
+        570
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja",
+        "Dopemu"
+      ],
+      "board": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Shasha LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Oshodi",
+      "to": "Dalemo",
+      "mode": "lamata",
+      "fare": [
+        920,
+        920
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja",
+        "Iyana Ipaja",
+        "Abule Egba",
+        "Kola"
+      ],
+      "board": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Dalemo LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Obalende",
+      "mode": "lamata",
+      "fare": [
+        970,
+        970
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Mile 12",
+        "Ketu",
+        "Maryland",
+        "Yaba",
+        "CMS"
+      ],
+      "board": "Ikorodu LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Yaba",
+      "to": "Idumota",
+      "mode": "lamata",
+      "fare": [
+        460,
+        460
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Oyingbo",
+        "Ebute Ero"
+      ],
+      "board": "Yaba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Idumota LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Berger",
+      "to": "Lekki Phase 1",
+      "mode": "lamata",
+      "fare": [
+        1140,
+        1140
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ojota",
+        "Maryland",
+        "Obalende",
+        "Victoria Island"
+      ],
+      "board": "Berger LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Lekki Phase 1 LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Mile 12",
+      "to": "TBS",
+      "mode": "lamata",
+      "fare": [
+        690,
+        690
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Fadeyi",
+        "Yaba",
+        "Costain",
+        "CMS"
+      ],
+      "board": "Mile 12 LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "TBS LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ojota",
+      "to": "Egbeda",
+      "mode": "lamata",
+      "fare": [
+        690,
+        690
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Maryland",
+        "Ikeja"
+      ],
+      "board": "Ojota LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Egbeda LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Iyana Ipaja",
+      "to": "Oyingbo",
+      "mode": "lamata",
+      "fare": [
+        800,
+        800
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Dopemu",
+        "Ikeja",
+        "Oshodi",
+        "Mushin",
+        "Yaba"
+      ],
+      "board": "Iyana Ipaja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Oyingbo LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikotun",
+      "to": "CMS",
+      "mode": "lamata",
+      "fare": [
+        1100,
+        1100
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Cele",
+        "Mushin",
+        "Yaba",
+        "Oyingbo"
+      ],
+      "board": "Ikotun LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "CMS LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikeja",
+      "to": "Kola",
+      "mode": "lamata",
+      "fare": [
+        800,
+        800
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Dopemu",
+        "Iyana Ipaja",
+        "Abule Egba"
+      ],
+      "board": "Ikeja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Kola LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Dopemu",
+      "to": "Yaba",
+      "mode": "lamata",
+      "fare": [
+        800,
+        800
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja",
+        "Oshodi",
+        "Mushin"
+      ],
+      "board": "Dopemu LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Yaba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Abesan",
+      "to": "Oshodi",
+      "mode": "lamata",
+      "fare": [
+        800,
+        800
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Iyana Ipaja",
+        "Dopemu",
+        "Ikeja"
+      ],
+      "board": "Abesan LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ayobo",
+      "to": "Obalende",
+      "mode": "lamata",
+      "fare": [
+        1260,
+        1260
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Iyana Ipaja",
+        "Ikeja",
+        "Oshodi",
+        "CMS"
+      ],
+      "board": "Ayobo LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Dopemu",
+      "to": "Obalende",
+      "mode": "lamata",
+      "fare": [
+        1090,
+        1090
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja",
+        "Oshodi",
+        "CMS"
+      ],
+      "board": "Dopemu LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Igbogbo",
+      "to": "Marina",
+      "mode": "lamata",
+      "fare": [
+        1140,
+        1140
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikorodu",
+        "Mile 12",
+        "Ketu",
+        "Maryland",
+        "Yaba",
+        "CMS"
+      ],
+      "board": "Igbogbo LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Marina LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Yaba",
+      "to": "Berger",
+      "mode": "lamata",
+      "fare": [
+        630,
+        630
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Fadeyi",
+        "Maryland",
+        "Ojota"
+      ],
+      "board": "Yaba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Berger LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikorodu",
+      "to": "Alausa",
+      "mode": "lamata",
+      "fare": [
+        800,
+        800
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Mile 12",
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Ikeja"
+      ],
+      "board": "Ikorodu LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Alausa LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ayobo",
+      "to": "Yaba",
+      "mode": "lamata",
+      "fare": [
+        1090,
+        1090
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Iyana Ipaja",
+        "Ikeja",
+        "Oshodi",
+        "Mushin"
+      ],
+      "board": "Ayobo LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Yaba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Abesan",
+      "to": "Yaba",
+      "mode": "lamata",
+      "fare": [
+        1090,
+        1090
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Iyana Ipaja",
+        "Ikeja",
+        "Oshodi",
+        "Mushin"
+      ],
+      "board": "Abesan LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Yaba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Elepe",
+      "to": "Oshodi",
+      "mode": "lamata",
+      "fare": [
+        920,
+        920
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikorodu",
+        "Mile 12",
+        "Ketu",
+        "Maryland"
+      ],
+      "board": "Elepe LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Maya",
+      "to": "Oshodi",
+      "mode": "lamata",
+      "fare": [
+        920,
+        920
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikorodu",
+        "Mile 12",
+        "Ketu",
+        "Maryland"
+      ],
+      "board": "Maya LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Alausa",
+      "to": "Egbeda",
+      "mode": "lamata",
+      "fare": [
+        690,
+        690
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja",
+        "Dopemu"
+      ],
+      "board": "Alausa LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Egbeda LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Abule Egba",
+      "to": "Ojota",
+      "mode": "lamata",
+      "fare": [
+        690,
+        690
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Iyana Ipaja",
+        "Ikeja",
+        "Maryland"
+      ],
+      "board": "Abule Egba LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Ojota LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikeja",
+      "to": "Berger",
+      "mode": "lamata",
+      "fare": [
+        470,
+        470
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ogba",
+        "Ojodu"
+      ],
+      "board": "Ikeja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Berger LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Berger",
+      "to": "Ajah",
+      "mode": "lamata",
+      "fare": [
+        1710,
+        1710
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ojota",
+        "Maryland",
+        "Obalende",
+        "Victoria Island",
+        "Lekki Phase 1"
+      ],
+      "board": "Berger LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Ajah LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikeja",
+      "to": "Iyana Ipaja",
+      "mode": "lamata",
+      "fare": [
+        440,
+        440
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Dopemu"
+      ],
+      "board": "Ikeja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Iyana Ipaja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Oshodi",
+      "to": "Obalende",
+      "mode": "lamata",
+      "fare": [
+        630,
+        630
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Mushin",
+        "Yaba",
+        "CMS"
+      ],
+      "board": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Berger",
+      "to": "Oshodi",
+      "mode": "lamata",
+      "fare": [
+        580,
+        580
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ojota",
+        "Maryland",
+        "Ikeja"
+      ],
+      "board": "Berger LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Berger",
+      "to": "Obalende",
+      "mode": "lamata",
+      "fare": [
+        680,
+        680
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ojota",
+        "Maryland",
+        "Yaba",
+        "CMS"
+      ],
+      "board": "Berger LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Oshodi",
+      "to": "Ajah",
+      "mode": "lamata",
+      "fare": [
+        1320,
+        1320
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Mushin",
+        "CMS",
+        "Obalende",
+        "Victoria Island",
+        "Lekki Phase 1"
+      ],
+      "board": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Ajah LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Mile 12",
+      "to": "Apapa",
+      "mode": "lamata",
+      "fare": [
+        810,
+        810
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ketu",
+        "Ojota",
+        "Maryland",
+        "Fadeyi",
+        "Costain"
+      ],
+      "board": "Mile 12 LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Apapa LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Oshodi",
+      "to": "Apapa",
+      "mode": "lamata",
+      "fare": [
+        690,
+        690
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Cele",
+        "Orile Iganmu"
+      ],
+      "board": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Apapa LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Obalende",
+      "to": "Ajah",
+      "mode": "lamata",
+      "fare": [
+        630,
+        630
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Victoria Island",
+        "Lekki Phase 1",
+        "Chevron"
+      ],
+      "board": "Obalende LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Ajah LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Oshodi",
+      "to": "Agege",
+      "mode": "lamata",
+      "fare": [
+        430,
+        430
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja"
+      ],
+      "board": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Agege LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikeja",
+      "to": "Ikotun",
+      "mode": "lamata",
+      "fare": [
+        630,
+        630
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Egbeda"
+      ],
+      "board": "Ikeja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Ikotun LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikeja",
+      "to": "Ayobo",
+      "mode": "lamata",
+      "fare": [
+        690,
+        690
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Dopemu",
+        "Iyana Ipaja"
+      ],
+      "board": "Ikeja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Ayobo LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikeja",
+      "to": "Egbeda",
+      "mode": "lamata",
+      "fare": [
+        680,
+        680
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Dopemu"
+      ],
+      "board": "Ikeja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Egbeda LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Ikeja",
+      "to": "Igando",
+      "mode": "lamata",
+      "fare": [
+        690,
+        690
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Egbeda",
+        "Ikotun"
+      ],
+      "board": "Ikeja LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Igando LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Oshodi",
+      "to": "Tinubu",
+      "mode": "lamata",
+      "fare": [
+        650,
+        650
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Mushin",
+        "Yaba",
+        "CMS"
+      ],
+      "board": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Tinubu LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
+    },
+    {
+      "from": "Oshodi",
+      "to": "Orelope",
+      "mode": "lamata",
+      "fare": [
+        690,
+        690
+      ],
+      "line": "LAMATA standard route (blue bus)",
+      "via": [
+        "Ikeja",
+        "Dopemu",
+        "Egbeda"
+      ],
+      "board": "Oshodi LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "boardReverse": "Orelope LAMATA bus stop — blue LBSL bus, Cowry card only (no cash)",
+      "official": true,
+      "fareSource": "LAMATA published fare, effective 2 March 2026",
+      "wait": 12
     }
   ],
   "tips": [

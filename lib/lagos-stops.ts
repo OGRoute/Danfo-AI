@@ -125,11 +125,81 @@ const STOP_DEFS: Record<string, StopDef> = {
   Ibafo: { pos: [6.778, 3.401] },
   Mowe: { pos: [6.813, 3.436] },
   "Redemption Camp": { pos: [6.856, 3.44], aliases: ["RCCG camp", "Redemption City"] },
+  // --- LAMATA standard-route and BRT stops (official fare table, Mar 2026) ---
+  Alausa: { pos: [6.6096, 3.3566], aliases: ["Alausa Secretariat", "Secretariat", "Ikeja Secretariat"] },
+  Dopemu: { pos: [6.6164, 3.3131] },
+  Shasha: { pos: [6.6025, 3.3005], aliases: ["Shasha market", "Shasha Akowonjo"] },
+  Orelope: { pos: [6.5922, 3.2912], aliases: ["Orelope Egbeda"] },
+  Ayobo: { pos: [6.602, 3.2438] },
+  Baruwa: { pos: [6.6073, 3.2729], aliases: ["Baruwa Ipaja"] },
+  Abesan: { pos: [6.6161, 3.2823], aliases: ["Abesan Gate", "Abesan Estate"] },
+  Command: { pos: [6.6269, 3.2593], aliases: ["Command Junction", "Command Ipaja"] },
+  Ikola: { pos: [6.6311, 3.2469], aliases: ["Ikola Odunsi"] },
+  Kola: { pos: [6.6554, 3.2652], aliases: ["Kola bus stop", "Kola Alagbado"] },
+  Dalemo: { pos: [6.6689, 3.2531], aliases: ["Dalemo Sango"] },
+  Tollgate: { pos: [6.6723, 3.2419], aliases: ["Sango Tollgate", "Lagos Abeokuta Tollgate"] },
+  "Ifako Ijaiye": { pos: [6.6636, 3.2895], aliases: ["Ifako-Ijaiye", "Ifako", "Ijaiye"] },
+  Barracks: { pos: [6.4984, 3.3553], aliases: ["Abalti Barracks", "Barracks bus stop"] },
+  Tinubu: { pos: [6.4538, 3.3894], aliases: ["Tinubu Square"] },
+  Odogunyan: { pos: [6.6584, 3.5205] },
+  Igbogbo: { pos: [6.5913, 3.5171] },
+  Elepe: { pos: [6.6147, 3.569] },
+  Maya: { pos: [6.652, 3.5781], aliases: ["Maya Ikorodu"] },
+  "Joke Ayo": { pos: [6.6005, 3.4665], aliases: ["Ayo bus stop", "Owutu", "Joke-Ayo"] },
 };
 
 export const LAGOS_STOPS: Record<string, LatLng> = Object.fromEntries(
   Object.entries(STOP_DEFS).map(([name, def]) => [name, def.pos])
 );
+
+/**
+ * Riders type fast and spell Lagos places many ways ("ikorodo", "ikaja",
+ * "oshodhi"). After exact and alias matching fails, names are compared by edit
+ * distance so a slip of one or two letters still finds the stop.
+ */
+function editDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) {
+      row[j] = Math.min(
+        prev[j] + 1,
+        row[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+/** How wrong a spelling may be before it stops being the same place. */
+const fuzzyBudget = (len: number) => (len <= 4 ? 0 : len <= 6 ? 1 : len <= 11 ? 2 : 3);
+
+/**
+ * The stop a misspelled phrase most likely means, or null when nothing is
+ * close enough. Compared against every stop name and alias.
+ */
+export function fuzzyFindStop(phrase: string): { name: string; distance: number } | null {
+  const needle = normalizeText(phrase).trim();
+  if (needle.length < 4) return null;
+  const budget = fuzzyBudget(needle.length);
+  if (budget === 0) return null;
+  let best: { name: string; distance: number } | null = null;
+  for (const [name, def] of Object.entries(STOP_DEFS)) {
+    for (const candidate of [name, ...(def.aliases ?? [])]) {
+      const flat = normalizeText(candidate).trim();
+      // A one-letter slip in a short name is a different place more often than
+      // a typo, so the budget scales with the shorter of the two names.
+      const allowed = Math.min(budget, fuzzyBudget(flat.length));
+      if (allowed === 0 || Math.abs(flat.length - needle.length) > allowed) continue;
+      const d = editDistance(needle, flat);
+      if (d <= allowed && (!best || d < best.distance)) best = { name, distance: d };
+    }
+  }
+  return best;
+}
 
 /** Rough geographic centre of Lagos, for the default map view. */
 export const LAGOS_CENTER: LatLng = [6.5244, 3.3792];
