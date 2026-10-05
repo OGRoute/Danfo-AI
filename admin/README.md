@@ -40,13 +40,28 @@ Node 22.19+ (same as the main app).
 
 ## Deploying
 
-A separate Vercel project with this directory as its root:
+This must be its **own** Vercel project. If `admin/.vercel` is missing, the CLI
+walks up to the repository root and deploys this app over the rider-facing
+site at danfo-ai.vercel.app — so link it first and check the link before
+deploying:
 
 ```bash
 cd admin
-vercel link                                  # new project, e.g. danfo-ai-admin
-vercel env add ADMIN_TOKEN production        # and the other three
-vercel deploy --prod
+vercel link --yes --project danfo-ai-admin   # creates a NEW project
+cat .vercel/project.json                     # MUST read danfo-ai-admin
+```
+
+Do not answer "yes" to *link to an existing project* — that is what points this
+directory at the main app. With the link confirmed, add the four variables
+(`DANFO_API_BASE` as Config, the other three as Secret) one at a time, since
+the CLI prompts for each value:
+
+```bash
+vercel env add DANFO_API_BASE production
+vercel env add ADMIN_TOKEN production
+vercel env add ADMIN_PASSWORD production
+vercel env add ADMIN_SESSION_SECRET production
+vercel deploy --prod --yes
 ```
 
 The sign-in is a single shared password behind a signed HTTPOnly cookie, and
