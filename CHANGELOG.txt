@@ -1,5 +1,39 @@
 ===============================================================================
  DanfoAI — Changelog
+ Branch: upgrade-r23
+ Date:   2026-10-07
+===============================================================================
+
+-------------------------------------------------------------------------------
+ FIXED — the map was blank on some devices and fine on others
+-------------------------------------------------------------------------------
+
+  Reported with a screenshot: the purple route drawn over an empty dark
+  background, no streets, no names — on one device, while the same page looked
+  right on another. The route was correct; the tile host simply could not be
+  reached from that connection (an ISP block, a captive network, or a link slow
+  enough that requests time out), and the map said nothing about it.
+
+  - Each base map now has a mirror on a different network: Streets falls back
+    from OpenStreetMap to Esri World Street Map, Terrain from Esri to
+    OpenTopoMap. After TILE_FAILURES_BEFORE_FALLBACK failed tiles (4) the map
+    moves to the mirror by itself, with the attribution following it.
+  - When no tile host can be reached, the map says so — "The map pictures
+    aren't loading on this connection — the route below is still correct" —
+    with "Try again" and "Try satellite", instead of leaving a blank sheet that
+    looks like a broken app. The trip, fares and boarding points are unaffected
+    either way, and the route still draws.
+  - Leaflet reports a tile that failed as "ready", so its `load` event fires
+    even when every tile errored. The handler now checks the failure count
+    before clearing the warning, which is why the notice used to be set and
+    then immediately cleared.
+  - Verified in a browser with the tile hosts blocked at the network layer:
+    OpenStreetMap blocked falls through to Esri and draws 24/24 tiles; all
+    hosts blocked shows the notice; nothing blocked serves OpenStreetMap as
+    before.
+
+===============================================================================
+ DanfoAI — Changelog
  Branch: upgrade-r22
  Date:   2026-10-07
 ===============================================================================

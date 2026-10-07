@@ -79,6 +79,14 @@ interface BasemapDef {
   url: string;
   attribution: string;
   maxZoom: number;
+  /**
+   * A mirror on a different network. Some riders' connections reach one tile
+   * host and not another — an ISP block, a captive network, or a link slow
+   * enough that requests time out — and the map then draws the route over
+   * nothing at all. When tiles keep failing, the map moves to this.
+   */
+  fallbackUrl?: string;
+  fallbackAttribution?: string;
   /** Transparent overlay drawn on top, for imagery that carries no names. */
   overlays?: string[];
   /** Dark UI inverts this layer's colours (street maps only — imagery must not). */
@@ -97,6 +105,8 @@ export const BASEMAPS: Record<Basemap, BasemapDef> = {
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
     invertible: true,
+    fallbackUrl: `${ESRI}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`,
+    fallbackAttribution: "&copy; Esri, HERE, Garmin, OpenStreetMap contributors",
   },
   satellite: {
     label: "Satellite",
@@ -114,8 +124,14 @@ export const BASEMAPS: Record<Basemap, BasemapDef> = {
     url: `${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`,
     attribution: "&copy; Esri, HERE, Garmin, FAO, NOAA, USGS",
     maxZoom: 19,
+    fallbackUrl: "https://tile.opentopomap.org/{z}/{x}/{y}.png",
+    fallbackAttribution:
+      '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA), OpenStreetMap contributors',
   },
 };
+
+/** Failed tiles before the map gives up on a host and tries its mirror. */
+const TILE_FAILURES_BEFORE_FALLBACK = 4;
 
 const DARK_TILE_URL = process.env.NEXT_PUBLIC_MAP_TILE_URL_DARK || "";
 
@@ -550,13 +566,48 @@ export default function RouteMap({
   // — an inverted photograph of Lagos is exactly what "doesn't look real".
   const invert = dark && !DARK_TILE_URL && !!chosen.invertible;
   const [tilesReady, setTilesReady] = useState(false);
+  // Tiles that never arrived, and whether we've moved to the mirror host.
+  const failures = useRef(0);
+  const [onFallback, setOnFallback] = useState(false);
+  const [tileProblem, setTileProblem] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     setTilesReady(false);
-    // If the layer never reports a load (no tiles in view, a provider that
+    setOnFallback(false);
+    setTileProblem(false);
+    failures.current = 0;
+    // If the layer never reports a load (no tiles in view, a host that
     // stalls), the notice must not sit there for ever.
-    const give_up = setTimeout(() => setTilesReady(true), 8000);
-    return () => clearTimeout(give_up);
-  }, [base]);
+    const giveUp = setTimeout(() => setTilesReady(true), 8000);
+    return () => clearTimeout(giveUp);
+  }, [base, attempt]);
+
+  function onTileError() {
+    failures.current += 1;
+    if (failures.current < TILE_FAILURES_BEFORE_FALLBACK) return;
+    if (!onFallback && chosen.fallbackUrl) {
+      // This host isn't reachable from here; try the one on another network.
+      failures.current = 0;
+      setOnFallback(true);
+      setTilesReady(false);
+    } else {
+      setTileProblem(true);
+      setTilesReady(true);
+    }
+  }
+
+  function retryTiles() {
+    failures.current = 0;
+    setAttempt((n) => n + 1);
+  }
+
+  const tileUrl =
+    invert && DARK_TILE_URL
+      ? DARK_TILE_URL
+      : onFallback && chosen.fallbackUrl
+        ? chosen.fallbackUrl
+        : chosen.url;
 
   function pickBasemap(next: Basemap) {
     setBase(next);
@@ -567,16 +618,25 @@ export default function RouteMap({
     <div className="rm">
       <MapContainer center={LAGOS_CENTER} zoom={11} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
         <TileLayer
-          key={`${base}-${invert ? "dark" : "light"}`}
+          key={`${base}-${invert ? "dark" : "light"}-${onFallback ? "mirror" : "main"}-${attempt}`}
           className={invert ? "rm-tiles-dark" : undefined}
-          url={invert && DARK_TILE_URL ? DARK_TILE_URL : chosen.url}
-          attribution={chosen.attribution}
+          url={tileUrl}
+          attribution={onFallback ? chosen.fallbackAttribution ?? chosen.attribution : chosen.attribution}
           maxZoom={chosen.maxZoom}
           // Keep drawing while the map moves, and hold a ring of tiles around
           // the view, so panning doesn't leave blank squares.
           updateWhenIdle={false}
           keepBuffer={3}
-          eventHandlers={{ load: () => setTilesReady(true) }}
+          eventHandlers={{
+            // Leaflet counts a tile that failed as "ready", so `load` fires
+            // even when every tile errored — it only means the map has
+            // finished trying, which is why the failures are counted too.
+            load: () => {
+              setTilesReady(true);
+              if (failures.current === 0) setTileProblem(false);
+            },
+            tileerror: onTileError,
+          }}
         />
         {chosen.overlays?.map((url) => (
           <TileLayer key={url} url={url} maxZoom={chosen.maxZoom} updateWhenIdle={false} keepBuffer={2} />
@@ -700,7 +760,23 @@ export default function RouteMap({
         )}
       </MapContainer>
 
-      {!tilesReady && <div className="rm-loading">Loading map\u2026</div>}
+      {!tilesReady && !tileProblem && <div className="rm-loading">Loading map\u2026</div>}
+      {tileProblem && (
+        <div className="rm-loading problem">
+          <span>
+            The map pictures aren&apos;t loading on this connection — the route below is still
+            correct.
+          </span>
+          <button type="button" onClick={retryTiles}>
+            Try again
+          </button>
+          {base !== "satellite" && (
+            <button type="button" onClick={() => pickBasemap("satellite")}>
+              Try satellite
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="rm-controls">
         <button
@@ -872,6 +948,28 @@ export default function RouteMap({
         .rm-base.on {
           background: var(--accent);
           color: var(--accent-text);
+        }
+        .rm-loading.problem {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          align-items: center;
+          gap: 8px;
+          max-width: min(420px, 86%);
+          text-align: center;
+          line-height: 1.45;
+          pointer-events: auto;
+        }
+        .rm-loading.problem button {
+          border: 1.5px solid var(--border);
+          border-radius: 999px;
+          background: transparent;
+          color: var(--text);
+          font: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 4px 10px;
+          cursor: pointer;
         }
         /* Until the first tiles arrive the map would be a blank sheet. */
         .rm-loading {
