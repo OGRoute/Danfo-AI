@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { LatLng } from "../lib/lagos-stops";
 import type { TripPlan } from "../lib/route-planner";
+import type { Basemap } from "./RouteMap";
 
 // Leaflet touches `window` on import, so the map must be client-only (no SSR).
 const RouteMap = dynamic(() => import("./RouteMap"), {
@@ -26,6 +27,10 @@ interface Props {
   followMe?: boolean;
   /** Force map colours instead of following the theme. */
   mapStyle?: "auto" | "light" | "dark";
+  /** Base map the rider chose in settings. */
+  basemap?: Basemap;
+  /** Remember a change made from the map's own switcher. */
+  onBasemapChange?: (basemap: Basemap) => void;
 }
 
 /** Full-screen live map: the planned route on real roads plus your position. */
@@ -38,6 +43,8 @@ export default function MapPanel({
   liveLocation,
   followMe,
   mapStyle,
+  basemap,
+  onBasemapChange,
 }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -75,6 +82,8 @@ export default function MapPanel({
           liveLocation={liveLocation}
           followMe={followMe}
           mapStyle={mapStyle}
+          basemap={basemap}
+          onBasemapChange={onBasemapChange}
         />
       </div>
 

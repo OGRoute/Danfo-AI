@@ -239,7 +239,19 @@ export default function SettingsPage() {
           <Row label="Theme" hint="System follows your phone or computer.">
             <Segmented value={pref} options={THEMES} onChange={setPref} label="Theme" />
           </Row>
-          <Row label="Map colours" hint="Force a light or dark map regardless of theme.">
+          <Row label="Base map" hint="Satellite shows real imagery of Lagos; terrain shows the land.">
+            <Segmented
+              value={settings.basemap}
+              options={[
+                { value: "streets", label: "Streets" },
+                { value: "satellite", label: "Satellite" },
+                { value: "terrain", label: "Terrain" },
+              ]}
+              onChange={(v) => update("basemap", v)}
+              label="Base map"
+            />
+          </Row>
+          <Row label="Map colours" hint="Dark only applies to the street map — imagery keeps its real colours.">
             <Segmented
               value={settings.mapStyle}
               options={[

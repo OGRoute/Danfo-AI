@@ -55,7 +55,7 @@ const INTRON_WIDGET_KEY =
 
 export default function Home() {
   const { status, method, identityKey, displayName, signOut } = useAuth();
-  const { settings, ready: settingsReady } = useSettings();
+  const { settings, ready: settingsReady, update: updateSetting } = useSettings();
 
   // Identity scope for history + notifications (null = anonymous / ephemeral).
   const history = useChatHistory(identityKey);
@@ -266,6 +266,8 @@ export default function Home() {
         liveLocation={settings.liveLocation}
         followMe={settings.followMe}
         mapStyle={settings.mapStyle}
+        basemap={settings.basemap}
+        onBasemapChange={(basemap) => updateSetting("basemap", basemap)}
       />
 
       <main className="wrap">

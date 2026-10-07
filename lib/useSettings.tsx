@@ -25,6 +25,8 @@ export interface Settings {
   followMe: boolean;
   /** Map colours: follow the app theme, or force one. */
   mapStyle: "auto" | "light" | "dark";
+  /** Base map: street map, satellite imagery, or terrain. */
+  basemap: "streets" | "satellite" | "terrain";
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   liveLocation: true,
   followMe: false,
   mapStyle: "auto",
+  basemap: "streets",
 };
 
 const STORAGE_KEY = "danfo-settings";

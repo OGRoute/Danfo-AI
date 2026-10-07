@@ -31,6 +31,10 @@ interface Props {
   followMe?: boolean;
   /** Force map colours instead of following the app theme. */
   mapStyle?: "auto" | "light" | "dark";
+  /** Base map the rider chose in settings. */
+  basemap?: Basemap;
+  /** Remember a change made from the map's own switcher. */
+  onBasemapChange?: (basemap: Basemap) => void;
 }
 
 interface Fix {
@@ -60,14 +64,60 @@ const OFF_ROUTE_M = 300;
 const formatAccuracy = (m: number) =>
   m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
 
-// Base map tiles. OpenStreetMap by default: free, no key, street names at
-// high zoom. Override for a commercial provider if the traffic grows.
-const OSM_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const TILE_URL = process.env.NEXT_PUBLIC_MAP_TILE_URL || OSM_TILE_URL;
+/**
+ * Base maps. All three need no API key.
+ *
+ * Riders said the map "doesn't look real — no place or figure, no road
+ * terrain", so there is now a choice: the street map, real satellite imagery,
+ * and a terrain map. Satellite carries a transparent labels overlay, otherwise
+ * imagery alone names nothing.
+ */
+export type Basemap = "streets" | "satellite" | "terrain";
+
+interface BasemapDef {
+  label: string;
+  url: string;
+  attribution: string;
+  maxZoom: number;
+  /** Transparent overlay drawn on top, for imagery that carries no names. */
+  overlays?: string[];
+  /** Dark UI inverts this layer's colours (street maps only — imagery must not). */
+  invertible?: boolean;
+}
+
+const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+
+export const BASEMAPS: Record<Basemap, BasemapDef> = {
+  streets: {
+    label: "Streets",
+    url: process.env.NEXT_PUBLIC_MAP_TILE_URL || OSM_TILE_URL,
+    attribution:
+      process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION ||
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+    invertible: true,
+  },
+  satellite: {
+    label: "Satellite",
+    url: `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+    // Esri's terms require the source credit to stay visible.
+    attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics",
+    maxZoom: 19,
+    overlays: [
+      `${ESRI}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`,
+      `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`,
+    ],
+  },
+  terrain: {
+    label: "Terrain",
+    url: `${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`,
+    attribution: "&copy; Esri, HERE, Garmin, FAO, NOAA, USGS",
+    maxZoom: 19,
+  },
+};
+
 const DARK_TILE_URL = process.env.NEXT_PUBLIC_MAP_TILE_URL_DARK || "";
-const TILE_ATTRIBUTION =
-  process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION ||
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 function legColor(leg: TripLeg): string {
   if (leg.mode === "rail") return /blue/i.test(leg.line ?? "") ? "#1d4ed8" : "#d92626";
@@ -440,6 +490,8 @@ export default function RouteMap({
   liveLocation = true,
   followMe = false,
   mapStyle = "auto",
+  basemap = "streets",
+  onBasemapChange,
 }: Props) {
   const { resolved } = useTheme();
 
@@ -491,20 +543,44 @@ export default function RouteMap({
   const dark = mapStyle === "auto" ? resolved === "dark" : mapStyle === "dark";
   const lastLeg = legs[legs.length - 1];
 
+  const [base, setBase] = useState<Basemap>(basemap);
+  useEffect(() => setBase(basemap), [basemap]);
+  const chosen = BASEMAPS[base] ?? BASEMAPS.streets;
+  // Street maps are inverted for the dark theme; imagery and terrain never are
+  // — an inverted photograph of Lagos is exactly what "doesn't look real".
+  const invert = dark && !DARK_TILE_URL && !!chosen.invertible;
+  const [tilesReady, setTilesReady] = useState(false);
+  useEffect(() => {
+    setTilesReady(false);
+    // If the layer never reports a load (no tiles in view, a provider that
+    // stalls), the notice must not sit there for ever.
+    const give_up = setTimeout(() => setTilesReady(true), 8000);
+    return () => clearTimeout(give_up);
+  }, [base]);
+
+  function pickBasemap(next: Basemap) {
+    setBase(next);
+    onBasemapChange?.(next);
+  }
+
   return (
     <div className="rm">
       <MapContainer center={LAGOS_CENTER} zoom={11} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
         <TileLayer
-          key={dark ? "dark" : "light"}
-          // OpenStreetMap's own tiles need no API key. CARTO's free basemaps
-          // now stamp "API KEY REQUIRED" across every tile, so the dark theme
-          // filters these instead of using a second provider. Set
-          // NEXT_PUBLIC_MAP_TILE_URL (+ _DARK, _ATTRIBUTION) to use a paid one.
-          className={dark && !DARK_TILE_URL ? "rm-tiles-dark" : undefined}
-          url={(dark ? DARK_TILE_URL || TILE_URL : TILE_URL) || OSM_TILE_URL}
-          attribution={TILE_ATTRIBUTION}
-          maxZoom={19}
+          key={`${base}-${invert ? "dark" : "light"}`}
+          className={invert ? "rm-tiles-dark" : undefined}
+          url={invert && DARK_TILE_URL ? DARK_TILE_URL : chosen.url}
+          attribution={chosen.attribution}
+          maxZoom={chosen.maxZoom}
+          // Keep drawing while the map moves, and hold a ring of tiles around
+          // the view, so panning doesn't leave blank squares.
+          updateWhenIdle={false}
+          keepBuffer={3}
+          eventHandlers={{ load: () => setTilesReady(true) }}
         />
+        {chosen.overlays?.map((url) => (
+          <TileLayer key={url} url={url} maxZoom={chosen.maxZoom} updateWhenIdle={false} keepBuffer={2} />
+        ))}
         <InvalidateOnMount />
         <FitView points={fitPoints} disabled={follow} />
         <FollowFix fix={fix} follow={follow} onUserMove={() => setFollow(false)} />
@@ -624,6 +700,8 @@ export default function RouteMap({
         )}
       </MapContainer>
 
+      {!tilesReady && <div className="rm-loading">Loading map\u2026</div>}
+
       <div className="rm-controls">
         <button
           type="button"
@@ -666,6 +744,19 @@ export default function RouteMap({
             <span>{simulating ? "End demo" : "Simulate trip"}</span>
           </button>
         )}
+        <div className="rm-basemaps" role="group" aria-label="Base map">
+          {(Object.keys(BASEMAPS) as Basemap[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={`rm-base ${base === key ? "on" : ""}`}
+              aria-pressed={base === key}
+              onClick={() => pickBasemap(key)}
+            >
+              {BASEMAPS[key].label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {gps.error && !sim && <div className="rm-toast">{gps.error}</div>}
@@ -757,8 +848,57 @@ export default function RouteMap({
           width: 100%;
         }
         /* Turn the light OSM tiles into a dark basemap (labels stay legible). */
+        .rm-basemaps {
+          display: flex;
+          border: 1.5px solid var(--border);
+          border-radius: 999px;
+          overflow: hidden;
+          background: var(--surface);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+        }
+        .rm-base {
+          border: 0;
+          background: transparent;
+          color: var(--text-muted);
+          font: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 6px 12px;
+          cursor: pointer;
+        }
+        .rm-base + .rm-base {
+          border-left: 1.5px solid var(--border);
+        }
+        .rm-base.on {
+          background: var(--accent);
+          color: var(--accent-text);
+        }
+        /* Until the first tiles arrive the map would be a blank sheet. */
+        .rm-loading {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 900;
+          background: var(--surface);
+          border: 1.5px solid var(--border);
+          border-radius: 999px;
+          padding: 7px 14px;
+          font-size: 12.5px;
+          font-weight: 600;
+          color: var(--text-muted);
+          pointer-events: none;
+        }
+        .rm :global(.leaflet-container) {
+          background: ${dark ? "#1b2026" : "#dfe3e6"};
+        }
+        /*
+         * The dark map used to be the street map with its colours inverted,
+         * which riders read as "not a real map" — water came out orange and
+         * parks grey. It is now dimmed instead: the same real map, at dusk.
+         */
         .rm-tiles-dark {
-          filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.95) saturate(0.6);
+          filter: brightness(0.78) saturate(0.85) contrast(1.06);
         }
         .rm-controls {
           position: absolute;

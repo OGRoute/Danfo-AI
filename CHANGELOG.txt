@@ -1,5 +1,39 @@
 ===============================================================================
  DanfoAI — Changelog
+ Branch: upgrade-r22
+ Date:   2026-10-07
+===============================================================================
+
+-------------------------------------------------------------------------------
+ CHANGED — the map looks like a real map
+-------------------------------------------------------------------------------
+
+  Reported as "it doesn't look real, no place or figure available, no road
+  terrain". Two causes, both real.
+
+  - The dark map was the street map with its colours inverted
+    (invert(1) hue-rotate(180deg)), so water came out orange, parks came out
+    grey and the whole thing read as a photographic negative. It is now dimmed
+    instead — brightness(0.78) saturate(0.85) — the same real map, at dusk.
+  - There was only ever one base map. There are now three, none needing an API
+    key, switchable from the map itself and remembered in settings:
+      Streets    OpenStreetMap — roads, bus stops, street names
+      Satellite  Esri World Imagery, with transparent Esri overlays for roads
+                 and place names, because imagery alone labels nothing
+      Terrain    Esri World Topo — the land, rivers and LGA boundaries
+  - Tiles are requested from tile.openstreetmap.org rather than the deprecated
+    {s}.tile.openstreetmap.org subdomain rotation, and the layer now keeps a
+    buffer of tiles around the view and redraws while panning, so moving the
+    map no longer leaves blank squares.
+  - Until the first tiles arrive the map was a blank white sheet with floating
+    blue dots — which is what "no road terrain" looked like. It now shows a
+    "Loading map…" notice over a map-coloured backdrop, and the backdrop
+    follows the theme so nothing flashes white in dark mode.
+  - Route lines, stops and the rider's position were verified over imagery at
+    desktop and phone widths.
+
+===============================================================================
+ DanfoAI — Changelog
  Branch: upgrade-r21
  Date:   2026-10-05
 ===============================================================================
