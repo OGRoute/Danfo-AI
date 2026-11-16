@@ -318,19 +318,20 @@ const NO_TRIP: Record<LangCode, NoTripWriter> = {
 export function composeNoTrip(plan: TripPlan, language: LangCode = "en"): string | null {
   if (plan.best) return null;
   const w = NO_TRIP[language] ?? NO_TRIP.en;
+  // Name places the way the rider picked or typed them, not the stop they snap to.
+  const origin = plan.places?.origin?.label ?? plan.origin;
+  const destination = plan.places?.destination?.label ?? plan.destination;
   switch (plan.status) {
     case "out-of-area":
       return w.outOfArea(plan.outOfArea ?? "That place");
     case "same-place":
-      return w.samePlace(plan.destination ?? plan.origin ?? "there");
+      return w.samePlace(destination ?? origin ?? "there");
     case "need-origin":
-      return w.needOrigin(plan.destination ?? "there");
+      return w.needOrigin(destination ?? "there");
     case "need-destination":
-      return w.needDestination(plan.origin ?? "there");
+      return w.needDestination(origin ?? "there");
     case "no-connection":
-      return plan.origin && plan.destination
-        ? w.noConnection(plan.origin, plan.destination)
-        : w.help;
+      return origin && destination ? w.noConnection(origin, destination) : w.help;
     default:
       return w.help;
   }
@@ -344,8 +345,20 @@ export function composeAnswer(plan: TripPlan, language: LangCode = "en"): string
   const time = (r?: [number, number]) => (r ? w.time(r) : null);
   const short = (mode: string) => (w.short ?? w.vehicle)[mode] ?? mode;
 
+  // Two places a short walk apart: there is no vehicle, fare or payment to
+  // describe, so the answer is just the walk.
+  if (best.legs.length === 1 && best.legs[0].mode === "walk") {
+    const leg = best.legs[0];
+    return w.walk(1, leg, distance(leg.km), time(leg.duration)).replace(/^1\.\s*/, "");
+  }
+
   const lines = [w.summary(best, formatNaira(best.fare), time(best.duration))];
-  if (plan.originSource === "location") lines.push(w.nearest(best.from));
+  // The stop the trip really starts at — best.from may be the rider's own
+  // position when a walk to that stop comes first.
+  const firstRide = best.legs.find((l) => l.mode !== "walk");
+  if (plan.originSource === "location" && firstRide && (plan.places?.origin?.stop ?? best.from) === firstRide.from) {
+    lines.push(w.nearest(firstRide.from));
+  }
   for (const s of plan.substitutions) lines.push(w.substitute(s.requested, s.used, s.km));
 
   lines.push(

@@ -13,6 +13,8 @@ import MapPanel from "../components/MapPanel";
 import TripCard from "../components/TripCard";
 import FeedbackBar from "../components/FeedbackBar";
 import IntronVoiceInput from "../components/IntronVoiceInput";
+import dynamic from "next/dynamic";
+import type { PickedTrip } from "../components/TripPicker";
 import { findStopsInText, type LatLng } from "../lib/lagos-stops";
 import { LANGUAGE_NAMES, type LangCode } from "../lib/language-detect";
 import type { TripPlan } from "../lib/route-planner";
@@ -22,6 +24,9 @@ import { useAuth } from "../lib/useAuth";
 import { useNotifications } from "../lib/useNotifications";
 import { useChatHistory, type Msg } from "../lib/useChatHistory";
 import { useSettings } from "../lib/useSettings";
+
+// The picker carries the Lagos place list, so it loads as its own chunk.
+const TripPicker = dynamic(() => import("../components/TripPicker"), { ssr: false });
 
 // Rotating greeting across Nigeria's major languages (animated via FlipWords).
 const GREETINGS = ["E kaabo.", "Nnọọ.", "Barka.", "Welcome."];
@@ -70,6 +75,7 @@ export default function Home() {
   const [voiceLang, setVoiceLang] = useState<LangCode | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(true);
   const [mapPlan, setMapPlan] = useState<TripPlan | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -140,7 +146,7 @@ export default function Home() {
     });
   }
 
-  async function send(text: string) {
+  async function send(text: string, trip?: PickedTrip) {
     const content = text.trim();
     if (!content || loading) return;
     // Sending ends the recording; late phrases would otherwise refill the box.
@@ -159,6 +165,8 @@ export default function Home() {
           language: settings.replyLanguage || lang || voiceLang || undefined,
           location: positionRef.current?.pos ?? undefined,
           locationAccuracy: positionRef.current?.accuracy,
+          // Places chosen in the From / To picker, planned exactly as picked.
+          trip: trip ? { origin: trip.origin, destination: trip.destination } : undefined,
         }),
       });
       const data = await res.json();
@@ -427,7 +435,34 @@ export default function Home() {
           </div>
         )}
 
+        {pickerOpen && (
+          <TripPicker
+            busy={loading}
+            position={positionRef.current?.pos ?? null}
+            onLocated={(pos, accuracy) => {
+              positionRef.current = { pos, accuracy };
+            }}
+            onSubmit={(trip) => {
+              // On a phone the picker and the reply can't both fit; the pin
+              // button brings it back.
+              if (window.matchMedia("(max-width: 600px)").matches) setPickerOpen(false);
+              send(trip.text, trip);
+            }}
+          />
+        )}
+
         <footer className="composer">
+          <button
+            type="button"
+            className={`pickbtn ${pickerOpen ? "on" : ""}`}
+            onClick={() => setPickerOpen((v) => !v)}
+            aria-pressed={pickerOpen}
+            aria-label={pickerOpen ? "Hide the From / To picker" : "Pick your start and destination"}
+            title="Pick start and destination"
+          >
+            <span aria-hidden>📍</span>
+          </button>
+
           {voice.supported && !INTRON_WIDGET_KEY && (
             <select
               className="langpick"
@@ -482,7 +517,7 @@ export default function Home() {
             placeholder={
               recording
                 ? "Listening… speak naturally, tap ■ when done"
-                : "Where you dey go? e.g. CMS to Ikeja"
+                : "Or just ask: CMS to Ikeja"
             }
             aria-label="Your message"
           />
@@ -833,7 +868,7 @@ export default function Home() {
         }
         .composer textarea::placeholder { color: var(--text-muted); opacity: 0.8; }
         .composer textarea:focus { box-shadow: 0 0 0 3px var(--ring); }
-        .mic, .go {
+        .mic, .go, .pickbtn {
           height: 50px;
           border: 2px solid var(--border);
           border-radius: 12px;
@@ -842,6 +877,20 @@ export default function Home() {
           font-size: 16px;
           padding: 0 14px;
           flex-shrink: 0;
+        }
+        .pickbtn {
+          background: var(--surface);
+          color: var(--text);
+          min-width: 48px;
+          padding: 0 10px;
+        }
+        .pickbtn.on {
+          background: var(--accent);
+          color: var(--accent-text);
+        }
+        .pickbtn:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px var(--ring);
         }
         .mic {
           background: var(--surface);
@@ -900,6 +949,7 @@ export default function Home() {
             height: 42px;
             padding: 0 8px;
           }
+          .pickbtn { order: 0; min-width: 46px; }
           .mic { order: 1; min-width: 46px; }
           .composer textarea { order: 2; }
           .go { order: 4; flex: 1 1 100%; height: 46px; }

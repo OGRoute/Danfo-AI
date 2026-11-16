@@ -34,3 +34,6 @@ yarngpt-service/models/
 # Clerk CLI agent skills (local tooling)
 .agents/
 skills-lock.json
+
+# fine-tuning dataset (regenerate with: npm run build:training)
+/training/
