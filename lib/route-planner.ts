@@ -433,8 +433,13 @@ function withAccessLegs(it: Itinerary, places?: TripPlan["places"]): Itinerary {
   const timed = legs.every((l) => l.duration);
   const transfers = Math.max(0, legs.length - 1);
   return {
-    from: legs[0].from,
-    to: legs[legs.length - 1].to,
+    // An end close enough to its stop to need no access leg still keeps the
+    // rider's own name for it.
+    from: legs[0] === it.legs[0] ? origin?.label ?? legs[0].from : legs[0].from,
+    to:
+      legs[legs.length - 1] === it.legs[it.legs.length - 1]
+        ? destination?.label ?? legs[legs.length - 1].to
+        : legs[legs.length - 1].to,
     legs,
     fare: [legs.reduce((s, l) => s + l.fare[0], 0), legs.reduce((s, l) => s + l.fare[1], 0)],
     duration: timed
@@ -643,7 +648,7 @@ export function isOutOfArea(phrase: string): boolean {
  * to pick where the rider is boarding — better to ask than to start the trip
  * from a stop they were never near.
  */
-const COARSE_LOCATION_M = 500;
+export const COARSE_LOCATION_M = 500;
 /** Furthest a live fix may be from a served stop for that stop to be the start. */
 const LOCATION_SNAP_KM = 3;
 
@@ -772,6 +777,124 @@ export function planTrip(
   plan.best = best ? withAccessLegs(best, places) : null;
   plan.alternatives = alternatives.map((a) => withAccessLegs(a, places));
   plan.status = plan.best ? "ok" : "no-connection";
+  return plan;
+}
+
+// ---------------------------------------------------------------------------
+// Trips between two picked places (the From / To picker)
+// ---------------------------------------------------------------------------
+
+/** How far a picked place may be from a stop with routes and still be served by it. */
+export const MAX_ACCESS_KM = 8;
+/** Two picks closer than this are the same place. */
+const SAME_PLACE_KM = 0.15;
+/** Up to this far a keke straight there is always worth offering. */
+const DIRECT_KEKE_MAX_KM = 2.5;
+/**
+ * Up to this far a keke still beats the bus when getting to and from the
+ * stops would cover more ground than the trip itself (Computer Village to
+ * Opebi should not go round by Maryland).
+ */
+const DIRECT_DETOUR_MAX_KM = 5;
+
+/**
+ * Tie a position to the network: the nearest stop that vehicles actually run
+ * from. Returns null when nothing served is within reach.
+ */
+export function resolveToNetwork(
+  kb: RouteKB,
+  label: string,
+  pos: LatLng,
+  maxKm = MAX_ACCESS_KM
+): ResolvedPlace | null {
+  let best: { stop: string; km: number } | null = null;
+  for (const node of graphFor(kb).keys()) {
+    const p = LAGOS_STOPS[node];
+    if (!p) continue;
+    const km = haversineKm(pos, p);
+    if (km <= maxKm && (!best || km < best.km)) best = { stop: node, km };
+  }
+  return best && { label, pos, stop: best.stop, km: Math.round(best.km * 10) / 10 };
+}
+
+/** One walk or keke hop straight from one picked place to the other. */
+function directItinerary(origin: ResolvedPlace, destination: ResolvedPlace, km: number): Itinerary {
+  const walk = km <= WALK_MAX_KM;
+  const minutes = walk ? Math.max(3, Math.round(km * 13)) : Math.max(5, Math.round(km * 4));
+  const fare: [number, number] = walk ? [0, 0] : [200, Math.max(300, round50(km * 150))];
+  const duration: [number, number] = [minutes, Math.round(minutes * 1.6)];
+  const leg: TripLeg = {
+    from: origin.label,
+    to: destination.label,
+    mode: walk ? "walk" : "keke",
+    fare,
+    duration,
+    board: origin.label,
+    alight: destination.label,
+    path: [origin.label, destination.label],
+    fromPos: origin.pos,
+    toPos: destination.pos,
+    km: Math.round(km * 10) / 10,
+    estimated: true,
+  };
+  return { from: origin.label, to: destination.label, legs: [leg], fare, duration };
+}
+
+/**
+ * Plan between two places the rider picked, each already tied to the network
+ * by resolveToNetwork(). Nothing is parsed from text here, so the trip is
+ * exactly the one asked for: a walk or keke to the nearest served stop, the
+ * vehicles between the two stops, and a walk or keke at the far end.
+ */
+export function planBetween(
+  kb: RouteKB,
+  origin: ResolvedPlace,
+  destination: ResolvedPlace,
+  originSource: "text" | "location" = "text"
+): TripPlan {
+  const places = { origin, destination };
+  const plan: TripPlan = {
+    origin: origin.stop,
+    destination: destination.stop,
+    originSource,
+    status: "no-connection",
+    substitutions: [],
+    best: null,
+    alternatives: [],
+    places,
+  };
+
+  const apart = haversineKm(origin.pos, destination.pos);
+  if (apart < SAME_PLACE_KM) {
+    plan.status = "same-place";
+    return plan;
+  }
+  // Close enough that boarding a bus would be a detour.
+  const detour = apart <= DIRECT_DETOUR_MAX_KM && origin.km + destination.km >= apart * 0.8;
+  const direct =
+    apart <= DIRECT_KEKE_MAX_KM || detour ? directItinerary(origin, destination, apart) : null;
+  if (direct && (apart <= WALK_MAX_KM || origin.stop === destination.stop || detour)) {
+    plan.best = direct;
+    plan.status = "ok";
+    return plan;
+  }
+  if (origin.stop === destination.stop) {
+    // Both ends hang off one stop but are too far apart for a keke: there is
+    // no honest trip to describe from the route data.
+    return plan;
+  }
+
+  const { best, alternatives } = planRoute(graphFor(kb), origin.stop, destination.stop);
+  if (!best) {
+    plan.best = direct;
+    plan.status = direct ? "ok" : "no-connection";
+    return plan;
+  }
+  plan.best = withAccessLegs(best, places);
+  plan.alternatives = alternatives.map((a) => withAccessLegs(a, places));
+  // A short keke hop is worth offering beside a bus trip between near places.
+  if (direct) plan.alternatives = [direct, ...plan.alternatives].slice(0, 2);
+  plan.status = "ok";
   return plan;
 }
 

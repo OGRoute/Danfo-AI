@@ -152,6 +152,16 @@ export const LAGOS_STOPS: Record<string, LatLng> = Object.fromEntries(
   Object.entries(STOP_DEFS).map(([name, def]) => [name, def.pos])
 );
 
+/** Every stop with the other names riders use for it (for the From / To picker). */
+export const STOP_LIST: Array<{ name: string; pos: LatLng; aliases: string[] }> = Object.entries(
+  STOP_DEFS
+).map(([name, def]) => ({ name, pos: def.pos, aliases: def.aliases ?? [] }));
+
+/** Edit distance between two already-normalised strings. */
+export function spellingDistance(a: string, b: string): number {
+  return editDistance(a, b);
+}
+
 /**
  * Riders type fast and spell Lagos places many ways ("ikorodo", "ikaja",
  * "oshodhi"). After exact and alias matching fails, names are compared by edit

@@ -3,7 +3,17 @@ import { danfoChat, discoverProvider } from "../../../lib/zg-compute";
 import { loadRouteKB } from "../../../lib/routes-kb";
 import { buildSystemPrompt, replyKeepsFacts } from "../../../lib/prompt";
 import { composeAnswer, composeNoTrip } from "../../../lib/compose-answer";
-import { extractPlacePhrases, isOutOfArea, planTrip } from "../../../lib/route-planner";
+import {
+  COARSE_LOCATION_M,
+  extractPlacePhrases,
+  isOutOfArea,
+  planBetween,
+  planTrip,
+  resolveToNetwork,
+  type TripPlan,
+} from "../../../lib/route-planner";
+import { placeById } from "../../../lib/lagos-places";
+import type { RouteKB } from "../../../lib/prompt";
 import { recordQuery } from "../../../lib/query-log";
 import { resolveEndpoint } from "../../../lib/geocode";
 import { applyCorrections, loadOverrides } from "../../../lib/corrections";
@@ -47,8 +57,75 @@ function asLatLng(v: unknown): LatLng | null {
     : null;
 }
 
+/** What the rider's own position is called in each reply language. */
+const HERE: Record<LangCode, string> = {
+  en: "your location",
+  pcm: "where you dey",
+  yo: "ibi tí o wà",
+  ig: "ebe ị nọ",
+  ha: "inda kake",
+};
+
 /**
- * POST { messages, language?, location? }
+ * One end of a picked trip: a place id from lib/lagos-places.ts, or the
+ * rider's position ({ location: [lat, lng], accuracy? }).
+ */
+function pickedEndpoint(kb: RouteKB, raw: any, language: LangCode) {
+  const place = placeById(raw?.id);
+  if (place) {
+    return { label: place.name, resolved: resolveToNetwork(kb, place.name, place.pos), here: false };
+  }
+  const pos = asLatLng(raw?.location);
+  if (!pos) return null;
+  const accuracy = typeof raw.accuracy === "number" && Number.isFinite(raw.accuracy) ? raw.accuracy : null;
+  // Same rule as typed trips: a fix vaguer than COARSE_LOCATION_M is a
+  // neighbourhood, not a place to start a trip from.
+  const usable = accuracy == null || accuracy <= COARSE_LOCATION_M;
+  return {
+    label: HERE[language],
+    resolved: usable ? resolveToNetwork(kb, HERE[language], pos) : null,
+    here: true,
+    vague: !usable,
+  };
+}
+
+/**
+ * The plan for a trip chosen in the From / To picker, or null when the request
+ * carries no (valid) picked trip and the message should be read as text.
+ */
+function planPickedTrip(kb: RouteKB, trip: any, language: LangCode): TripPlan | null {
+  if (!trip || typeof trip !== "object") return null;
+  const origin = pickedEndpoint(kb, trip.origin, language);
+  const destination = pickedEndpoint(kb, trip.destination, language);
+  if (!origin || !destination) return null;
+
+  if (origin.resolved && destination.resolved) {
+    return planBetween(kb, origin.resolved, destination.resolved, origin.here ? "location" : "text");
+  }
+  // One end can't be tied to the network: too far from any served stop, or a
+  // position too vague to use. Say which, rather than routing from a guess.
+  const unplaced = (label: string) => ({ label, pos: [0, 0] as LatLng, stop: label, km: 0 });
+  const vagueOrigin = "vague" in origin && origin.vague;
+  return {
+    origin: vagueOrigin ? null : origin.resolved?.stop ?? origin.label,
+    destination: destination.resolved?.stop ?? destination.label,
+    originSource: null,
+    status: vagueOrigin ? "need-origin" : "no-connection",
+    substitutions: [],
+    best: null,
+    alternatives: [],
+    places: {
+      origin: vagueOrigin ? null : origin.resolved ?? unplaced(origin.label),
+      destination: destination.resolved ?? unplaced(destination.label),
+    },
+  };
+}
+
+/**
+ * POST { messages, language?, location?, trip? }
+ *  - trip: { origin, destination } chosen in the From / To picker. Each end is
+ *    { id } (a place id) or { location: [lat, lng], accuracy? } for "where I
+ *    am now". When present the trip is planned between exactly those points.
  *  - language: reply language (yo | ig | ha | en | pcm); detected from the
  *    rider's last message when omitted.
  *  - location: [lat, lng] from the live map, used as the starting point when
@@ -83,12 +160,21 @@ export async function POST(req: NextRequest) {
       typeof body.locationAccuracy === "number" && Number.isFinite(body.locationAccuracy)
         ? body.locationAccuracy
         : null;
-    let plan = planTrip(kb, userTexts, location, undefined, accuracy);
+    // Reply language is needed early: a trip from the rider's position is
+    // labelled in it ("your location" / "where you dey").
+    const language: LangCode = isLangCode(body.language)
+      ? body.language
+      : detectLanguage(userTexts[userTexts.length - 1] ?? "").code;
+
+    // Places chosen in the From / To picker are planned exactly as picked —
+    // nothing is guessed from the wording of the message.
+    const picked = planPickedTrip(kb, body.trip, language);
+    let plan = picked ?? planTrip(kb, userTexts, location, undefined, accuracy);
 
     // Streets, estates, markets and landmarks the route database doesn't know:
     // resolve them on OpenStreetMap and walk the rider to the nearest stop
     // that actually has routes.
-    if (!plan.best) {
+    if (!picked && !plan.best) {
       const latest = userTexts[userTexts.length - 1] ?? "";
       const phrases = extractPlacePhrases(latest);
       // Never geocode a city outside the covered area: OpenStreetMap will
@@ -105,10 +191,6 @@ export async function POST(req: NextRequest) {
         plan = planTrip(kb, userTexts, location, { origin, destination }, accuracy);
       }
     }
-    const language: LangCode = isLangCode(body.language)
-      ? body.language
-      : detectLanguage(userTexts[userTexts.length - 1] ?? "").code;
-
     recordQuery({
       text: userTexts[userTexts.length - 1] ?? "",
       language,
@@ -149,12 +231,26 @@ export async function POST(req: NextRequest) {
     }
 
     const system = buildSystemPrompt(kb, { plan, language });
-    const provider = await discoverProvider();
-
-    const result = await danfoChat(provider, [
-      { role: "system", content: system },
-      ...messages.slice(-HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content })),
-    ]);
+    let result: Awaited<ReturnType<typeof danfoChat>>;
+    try {
+      const provider = await discoverProvider();
+      result = await danfoChat(provider, [
+        { role: "system", content: system },
+        ...messages.slice(-HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content })),
+      ]);
+    } catch (e) {
+      // The trip is already computed; the model only rewords it. A slow or
+      // unfunded 0G provider must not cost the rider their answer.
+      console.warn("/api/chat: model unavailable, sending the computed answer:", (e as Error).message);
+      return NextResponse.json({
+        reply: localAnswer ?? answer,
+        plan,
+        language,
+        source: "planner",
+        verified: false,
+        kbSource: source,
+      });
+    }
 
     // For a planned trip the model only rephrases the computed answer. If its
     // text lost or changed facts, show the computed answer instead.

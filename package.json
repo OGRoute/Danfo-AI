@@ -13,7 +13,10 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed-routes.ts",
     "deploy:contract": "tsx scripts/deploy-contract.ts",
-    "fund": "tsx scripts/fund.ts"
+    "fund": "tsx scripts/fund.ts",
+    "build:places": "tsx scripts/build-places.ts",
+    "build:training": "tsx scripts/build-training-data.ts",
+    "test:picker": "tsx scripts/test-picker.ts"
   },
   "dependencies": {
     "@0glabs/0g-serving-broker": "^0.6.5",

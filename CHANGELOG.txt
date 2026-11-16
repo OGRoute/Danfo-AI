@@ -1,5 +1,52 @@
 ===============================================================================
  DanfoAI — Changelog
+ Branch: feature/trip-picker-lagos-places
+ Date:   2026-11-16
+===============================================================================
+
+-------------------------------------------------------------------------------
+ ADDED — pick your start and destination (Lagos State)
+-------------------------------------------------------------------------------
+
+  Until now a trip had to be typed or spoken, and the planner read the two
+  ends out of the sentence. That fails quietly: a place it doesn't know, a
+  spelling it can't read, or "to" and "from" the wrong way round.
+
+  - A From / To picker sits above the message box (the pin button hides it).
+    Each field searches as you type — names, nicknames ("VI", "Unilag",
+    "Computer Village"), without regard to accents, and forgiving a letter or
+    two of misspelling. Keyboard: arrows, Enter, Escape.
+  - "Use my current location" is the first option under From. A sharp fix
+    starts the trip from where the rider is standing; a vague one (worse than
+    500 m, the planner's existing rule) is not used — the picker lists the
+    places nearest that fix and asks which one. A fix outside Lagos is refused.
+  - The list is every served stop plus data/lagos-places.json, a gazetteer of
+    areas, estates, markets, campuses, hospitals, malls, terminals and
+    landmarks across all 20 LGAs. Coordinates are not hand-typed:
+    scripts/build-places.ts looks each name up on OpenStreetMap and keeps it
+    only when the answer lands inside the LGA it belongs to.
+  - A picked trip is sent as place ids (or the GPS position) and planned by
+    planBetween() between exactly those two points: walk or keke to the
+    nearest stop that has routes, the vehicles between, walk or keke at the
+    far end. Two picks within walking distance get a walk, not a bus detour;
+    a short hop off one stop gets a keke with an estimated fare; a place more
+    than 8 km from any served stop gets an honest "no route yet".
+  - Replies name the places as picked ("From Allen Avenue to University of
+    Lagos"), in all five languages; "your location" is translated too.
+  - npm run test:picker checks search, snapping and a sample of every-pair
+    trips in all five languages.
+
+-------------------------------------------------------------------------------
+ ADDED — a training set for the chat model
+-------------------------------------------------------------------------------
+
+  npm run build:training writes a fine-tuning dataset computed by the planner
+  (see "Training the model" in the README). No model was trained in this
+  change: the model is hosted on 0G Compute and its weights are not in this
+  repository.
+
+===============================================================================
+ DanfoAI — Changelog
  Branch: upgrade-r23
  Date:   2026-10-07
 ===============================================================================

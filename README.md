@@ -25,6 +25,13 @@ What's inside:
   Yoruba, Igbo and Hausa, with auto-detect, that keeps listening until you tap
   stop. Replies are read aloud with Intron's native voices. Without an Intron
   key it falls back to local Whisper / the browser (English).
+- **Pick your start and destination.** A From / To picker above the message
+  box searches every place DanfoAI knows in Lagos State — the served bus stops
+  plus a gazetteer of areas, estates, markets, campuses, hospitals and
+  landmarks across all 20 LGAs — by name, nickname or a misspelling. "Use my
+  current location" starts the trip from where you are standing. The trip is
+  planned between exactly the two points picked (nothing is guessed from the
+  wording), with the walk or keke to the nearest served stop at each end.
 - **Any street, estate or landmark.** Places outside the route database are
   resolved on OpenStreetMap and snapped to the nearest served stop, with a
   walking or keke leg to reach it ("Walk about 400 m from Bode Thomas Street
@@ -149,23 +156,65 @@ danfo-ai/
 │   ├── prompt.ts                # system prompt + model reply fact-check
 │   ├── compose-answer.ts        # the reply itself, in all five languages
 │   ├── route-planner.ts         # legs, fares, boarding points, alternatives
+│   ├── lagos-places.ts          # every pickable place + search (stops + gazetteer)
 │   ├── geocode.ts               # streets/landmarks via OpenStreetMap
 │   ├── useSettings.tsx          # rider preferences (per device)
 │   └── routes-kb.ts             # KB loader (0G Storage → seed fallback)
 ├── components/
 │   ├── RouteMap.tsx             # live map: road routes, GPS, progress, simulation
+│   ├── TripPicker.tsx           # From / To picker with "use my current location"
 │   ├── TripCard.tsx             # computed trip under each reply
 │   └── IntronVoiceInput.tsx     # optional Intron streaming widget
 ├── contracts/
 │   └── RouteCorrections.sol     # community corrections registry
 ├── scripts/
 │   ├── seed-routes.ts           # upload KB to 0G Storage
-│   └── deploy-contract.ts       # compile + deploy to 0G Chain (cancun)
+│   ├── deploy-contract.ts       # compile + deploy to 0G Chain (cancun)
+│   ├── build-places.ts          # rebuild the Lagos gazetteer from OpenStreetMap
+│   ├── build-training-data.ts   # fine-tuning dataset computed by the planner
+│   └── test-picker.ts           # checks for the picker and picked trips
 └── data/
-    └── lagos-routes.json        # seed knowledge base
+    ├── lagos-routes.json        # seed knowledge base
+    └── lagos-places.json        # Lagos State gazetteer (© OpenStreetMap contributors)
 ```
 
 ---
+
+## Places and the From / To picker
+
+```bash
+npm run test:picker     # search, snapping to the network, picked trips in 5 languages
+npm run build:places    # re-resolve the gazetteer on OpenStreetMap (adds new names only)
+```
+
+`data/lagos-places.json` is generated: the names live in
+`scripts/build-places.ts`, grouped by LGA, and each is looked up on
+OpenStreetMap and kept only if the answer lands inside that LGA. To add a
+place, add its name there and run `npm run build:places`. The chat API takes
+the picked trip as `trip: { origin, destination }`, where each end is
+`{ id }` (a place id) or `{ location: [lat, lng], accuracy }`.
+
+## Training the model
+
+The chat model runs on 0G Compute; this repo does not hold its weights. What
+it does hold is a teacher: the trip planner. `npm run build:training` writes a
+fine-tuning dataset to `training/` (git-ignored), every example computed from
+the route data and the gazetteer:
+
+- `grounded.*.jsonl` — the production task: the app's own system prompt (the
+  computed answer + "rewrite / translate it, keep every fact"), a rider's
+  question, and the correct reply in English, Pidgin, Yoruba, Igbo or Hausa.
+  A model tuned on this can take over the languages that are template-only
+  today; then widen `MODEL_REPLY_LANGUAGES`.
+- `direct.*.jsonl` — the same questions with no computed answer in the prompt,
+  for measuring (or teaching) route recall. Fares go stale, so prefer the
+  grounded set for anything deployed.
+
+Train/eval are split by origin–destination pair. The files are in the
+`{"messages": [...]}` chat format used by 0G fine-tuning and by Hugging Face
+TRL/PEFT. Whatever model comes out is still checked at runtime by
+`replyKeepsFacts()`, so a tuned model can only ever change the wording, not
+the fares.
 
 ## Roadmap (post-group-stage)
 
