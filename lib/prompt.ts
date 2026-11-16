@@ -105,7 +105,9 @@ export function replyKeepsFacts(
   const amounts = (s: string) => (s.match(/\d[\d,]*/g) ?? []).map((d) => Number(d.replace(/,/g, "")));
   const numbers = new Set(amounts(text));
   for (const leg of best.legs) {
-    if (!has(leg.from) || !has(leg.to) || !numbers.has(leg.fare[0])) return false;
+    if (!has(leg.from) || !has(leg.to)) return false;
+    // A walk costs nothing, so there is no fare for the reply to carry.
+    if (leg.fare[0] > 0 && !numbers.has(leg.fare[0])) return false;
     if (language === "en" && !has(leg.board.split(" — ")[0])) return false;
   }
 

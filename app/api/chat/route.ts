@@ -17,7 +17,7 @@ import type { RouteKB } from "../../../lib/prompt";
 import { recordQuery } from "../../../lib/query-log";
 import { resolveEndpoint } from "../../../lib/geocode";
 import { applyCorrections, loadOverrides } from "../../../lib/corrections";
-import { detectLanguage, isLangCode, type LangCode } from "../../../lib/language-detect";
+import { detectLanguage, isLangCode, replyInLanguage, type LangCode } from "../../../lib/language-detect";
 import { isTimeoutError } from "../../../lib/zg-provider";
 import type { LatLng } from "../../../lib/lagos-stops";
 
@@ -256,7 +256,8 @@ export async function POST(req: NextRequest) {
     // text lost or changed facts, show the computed answer instead.
     let reply = result.reply.trim();
     let replySource: "model" | "planner" = "model";
-    if (answer && !replyKeepsFacts(reply, plan, answer, language)) {
+    // …or if it came back in the wrong language (small models drift to English).
+    if (answer && (!replyKeepsFacts(reply, plan, answer, language) || !replyInLanguage(reply, language))) {
       reply = localAnswer ?? answer;
       replySource = "planner";
     }

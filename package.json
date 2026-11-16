@@ -16,6 +16,7 @@
     "fund": "tsx scripts/fund.ts",
     "build:places": "tsx scripts/build-places.ts",
     "build:training": "tsx scripts/build-training-data.ts",
+    "eval:model": "tsx scripts/eval-model.ts",
     "test:picker": "tsx scripts/test-picker.ts"
   },
   "dependencies": {
