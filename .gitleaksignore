@@ -1,0 +1,4 @@
+# Reviewed findings for the Secret scan job. One gitleaks fingerprint per line, each with a reason.
+# Next.js per-build server-actions encryptionKey inside .next/ dev build output committed on the
+# `benji` branch. Only valid for that local build; not a service credential. Remove with the branch.
+e12a3d6f325c4ed27fa43678f172f8ed350717f9:.next/server/server-reference-manifest.json:generic-api-key:4
