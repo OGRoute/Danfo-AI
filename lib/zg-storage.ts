@@ -12,7 +12,10 @@
  * NOTE: @0glabs/0g-ts-sdk is a Node SDK. These functions must run
  * server-side only (API routes / scripts), never in the browser.
  */
-import { ZgFile, Indexer } from "@0glabs/0g-ts-sdk";
+// require(), not import: see the note in lib/zg-compute.ts.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+import type { ZgFile as ZgFileInstance } from "@0glabs/0g-ts-sdk";
+const { ZgFile, Indexer } = require("@0glabs/0g-ts-sdk") as typeof import("@0glabs/0g-ts-sdk");
 import { writeFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -40,7 +43,7 @@ export async function uploadJson(obj: unknown): Promise<string> {
   const tmpPath = join(tmpdir(), `danfo-${randomUUID()}.json`);
   await writeFile(tmpPath, JSON.stringify(obj));
 
-  let file: ZgFile | null = null;
+  let file: ZgFileInstance | null = null;
   try {
     file = await ZgFile.fromFilePath(tmpPath);
     const [tree, treeErr] = await file.merkleTree();

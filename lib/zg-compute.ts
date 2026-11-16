@@ -11,7 +11,12 @@
  *  - Extract ChatID from the response (ZG-Res-Key header first, body fallback).
  *  - ethers v6 only.
  */
-import { createZGComputeNetworkBroker } from "@0glabs/0g-serving-broker";
+// Loaded with require() on purpose. As an import, Next hands this package to
+// Node as an ES module, and its ESM build is broken (index.mjs re-exports names
+// from a .js file Node on Vercel treats as CommonJS), which fails every request
+// that touches 0G with "Named export not found". The CommonJS build works.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { createZGComputeNetworkBroker } = require("@0glabs/0g-serving-broker") as typeof import("@0glabs/0g-serving-broker");
 import { getWallet } from "./zg-provider";
 
 type Broker = Awaited<ReturnType<typeof createZGComputeNetworkBroker>>;
