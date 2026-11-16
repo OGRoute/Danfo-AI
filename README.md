@@ -172,6 +172,7 @@ danfo-ai/
 │   ├── deploy-contract.ts       # compile + deploy to 0G Chain (cancun)
 │   ├── build-places.ts          # rebuild the Lagos gazetteer from OpenStreetMap
 │   ├── build-training-data.ts   # fine-tuning dataset computed by the planner
+│   ├── eval-model.ts            # per-language pass rate of a model on held-out trips
 │   └── test-picker.ts           # checks for the picker and picked trips
 └── data/
     ├── lagos-routes.json        # seed knowledge base
@@ -209,6 +210,13 @@ the route data and the gazetteer:
 - `direct.*.jsonl` — the same questions with no computed answer in the prompt,
   for measuring (or teaching) route recall. Fares go stale, so prefer the
   grounded set for anything deployed.
+
+The step-by-step run — the 0G fine-tuning commands, the training config, and
+what to do with the LoRA adapter that comes back — is in
+[finetune/README.md](finetune/README.md). `npm run eval:model` then replays the
+held-out trips against any OpenAI-compatible endpoint and reports, per
+language, how many replies pass the two gates the app applies (facts kept,
+right language) and which `MODEL_REPLY_LANGUAGES` value that justifies.
 
 Train/eval are split by origin–destination pair. The files are in the
 `{"messages": [...]}` chat format used by 0G fine-tuning and by Hugging Face

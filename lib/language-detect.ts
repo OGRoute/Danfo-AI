@@ -158,3 +158,15 @@ export function pickTranscript(
   }
   return best;
 }
+
+/**
+ * Whether a model's reply is actually written in the language it was asked
+ * for. A model that answers a Hausa rider in English can keep every fare and
+ * stop right and still be the wrong reply, so the fact check alone is not
+ * enough. The bar sits between what the planner's own answers score in each
+ * language (0.14 at the lowest, in Pidgin) and what an English answer scores
+ * in them (under 0.05). English is not tested: it is what models drift to.
+ */
+export function replyInLanguage(text: string, language: LangCode): boolean {
+  return language === "en" || scoreLanguages(text)[language] >= 0.1;
+}

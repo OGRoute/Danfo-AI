@@ -517,7 +517,10 @@ async function wikidataIndex(): Promise<Map<string, Array<[number, number]>>> {
 // ---------------------------------------------------------------------------
 
 /** Curated names OpenStreetMap answered with a same-named place kilometres away. */
-const OSM_WRONG = new Set(["Bourdillon", "Oniru", "Jakande Lekki", "Captain"].map((n) => n.toLowerCase()));
+const OSM_WRONG = new Set([
+  "Bourdillon", "Oniru", "Jakande Lekki", "Captain", "Eko Atlantic", "Lekki Toll Gate", "Magodo Phase 1",
+  "Cement", "First Bank Marina",
+].map((n) => n.toLowerCase()));
 
 let last = 0;
 const throttled = new Set<string>();

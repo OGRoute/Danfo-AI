@@ -1,5 +1,57 @@
 ===============================================================================
  DanfoAI — Changelog
+ Branch: feature/places-fill-and-model-training
+ Date:   2026-11-16
+===============================================================================
+
+-------------------------------------------------------------------------------
+ ADDED — everything needed to fine-tune the chat model, short of running it
+-------------------------------------------------------------------------------
+
+  No model was trained in this change either: a run needs a funded 0G wallet
+  (or a GPU), which the repository does not hold. What is here is the rest.
+
+  - finetune/README.md: the run, step by step, on 0G fine-tuning — which base
+    models it offers (Qwen2.5-0.5B-Instruct to prove the pipeline, Qwen3-32B
+    to deploy), the CLI commands, the 48-hour window to collect the model,
+    and the fact that what comes back is a LoRA adapter that 0G's inference
+    providers do not host for you. finetune/training_config.json is the
+    config in the five fields 0G's template allows.
+  - npm run build:training now prints the size of the training set in tokens
+    and what an epoch costs at 0G's list prices (about 4.0M tokens: ~2 0G on
+    the 0.5B model, ~16 0G on Qwen3-32B), and writes eval.cases.jsonl — the
+    held-out trips with their plans.
+  - npm run eval:model replays those trips against any OpenAI-compatible
+    endpoint with the app's own system prompt and reports, per language, how
+    many replies would actually be shown to a rider. It ends with the
+    MODEL_REPLY_LANGUAGES value the numbers justify. --self-test checks the
+    scorer without a model: the planner's answers must all pass, the same
+    answers with one fare changed must all fail.
+
+-------------------------------------------------------------------------------
+ FIXED — two holes in the check on the model's replies
+-------------------------------------------------------------------------------
+
+  - A reply in the wrong language passed. replyKeepsFacts() only looks at
+    stops and fares, so a model that answered a Hausa rider in English — the
+    drift this model is known for — kept every fact and was accepted. Found
+    by pointing eval:model at an endpoint that only ever answers in English:
+    it scored 100% in all five languages. /api/chat now also requires
+    replyInLanguage(); the same endpoint now earns English only.
+  - Any trip with a walking leg was rejected. The check wanted every leg's
+    fare in the reply, and a walk's fare is 0, which no reply contains. Those
+    trips always fell back to the template answer. Walks are now skipped.
+
+-------------------------------------------------------------------------------
+ CHANGED — more of the curated places have coordinates
+-------------------------------------------------------------------------------
+
+  The geocoders that were rate-limiting the last build answered again, so
+  scripts/build-places.ts --geocode was run for the names still missing.
+  See the place count printed by npm run test:picker.
+
+===============================================================================
+ DanfoAI — Changelog
  Branch: feature/trip-picker-lagos-places
  Date:   2026-11-16
 ===============================================================================

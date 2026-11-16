@@ -107,6 +107,9 @@ const line = (system: string, user: string, assistant: string) =>
     ],
   });
 
+/** Eval trips with their plans, so scripts/eval-model.ts can fact-check a model's replies. */
+const evalCases: string[] = [];
+
 const files: Record<string, string[]> = {
   "grounded.train": [],
   "grounded.eval": [],
@@ -141,7 +144,13 @@ for (let guard = 0; stats.pairs < PAIRS && guard < PAIRS * 20; guard++) {
     const question = pick(QUESTIONS[lang]).replace("{a}", a.name).replace("{b}", b.name);
     files[`direct.${split}`].push(line(DIRECT_SYSTEM, question, answer));
     // The grounded task only exists when there is a computed trip to phrase.
-    if (p.best) files[`grounded.${split}`].push(line(buildSystemPrompt(kb, { plan: p, language: lang }), question, answer));
+    if (p.best) {
+      const system = buildSystemPrompt(kb, { plan: p, language: lang });
+      files[`grounded.${split}`].push(line(system, question, answer));
+      if (split === "eval") {
+        evalCases.push(JSON.stringify({ language: lang, system, question, reference: answer, english: composeAnswer(p, "en"), plan: p }));
+      }
+    }
     stats.byLang[lang] = (stats.byLang[lang] ?? 0) + 1;
   }
 }
@@ -151,6 +160,14 @@ for (const [name, lines] of Object.entries(files)) {
   writeFileSync(join(OUT_DIR, `${name}.jsonl`), lines.join("\n") + "\n");
   console.log(`${String(lines.length).padStart(6)}  training/${name}.jsonl`);
 }
+writeFileSync(join(OUT_DIR, "eval.cases.jsonl"), evalCases.join("\n") + "\n");
+
+// Rough size of the production set, for budgeting a fine-tuning run. 0G bills
+// per million tokens per epoch; ~3.3 characters per token is a fair average
+// for this mix of English and tone-marked Yoruba/Igbo/Hausa.
+const tokens = Math.round(files["grounded.train"].join("").length / 3.3);
+const cost = (rate: number) => ((tokens / 1e6) * rate).toFixed(1);
+
 writeFileSync(
   join(OUT_DIR, "manifest.json"),
   JSON.stringify(
@@ -160,6 +177,7 @@ writeFileSync(
       routeDataUpdatedAt: kb.updatedAt,
       places: PICKER_PLACES.length,
       ...stats,
+      groundedTrainTokensEstimate: tokens,
       files: Object.fromEntries(Object.entries(files).map(([k, v]) => [`${k}.jsonl`, v.length])),
     },
     null,
@@ -169,4 +187,8 @@ writeFileSync(
 console.log(
   `\n${stats.pairs} place pairs (${stats.trips} trips, ${stats.refusals} honest refusals) ` +
     `from ${PICKER_PLACES.length} places · ${JSON.stringify(stats.byLang)}`
+);
+console.log(
+  `grounded.train is about ${(tokens / 1e6).toFixed(1)}M tokens: roughly ${cost(0.5)} 0G per epoch on Qwen2.5-0.5B-Instruct, ` +
+    `${cost(4)} 0G per epoch on Qwen3-32B (0G fine-tuning list prices; set TRAINING_PAIRS to resize).`
 );
