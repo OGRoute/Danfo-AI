@@ -920,6 +920,21 @@ export default function Home() {
           padding: 6px 0 10px;
         }
 
+        /* ---- Desktop: use the screen instead of a phone-width column ---- */
+        @media (min-width: 1100px) {
+          .wrap { max-width: 1040px; }
+          .chat { padding: 24px 28px; }
+          .samples { max-width: 560px; }
+          .content { font-size: 16px; }
+          /* Wide enough for the trip card, short enough to read in one sweep. */
+          .bubble.assistant { max-width: min(86%, 820px); }
+          .bubble.user { max-width: 70%; }
+        }
+        @media (min-width: 1500px) {
+          .wrap { max-width: 1240px; }
+          .bubble.assistant { max-width: min(80%, 900px); }
+        }
+
         /* ---- Tablet ---- */
         @media (max-width: 768px) {
           .top { padding: 14px 14px; gap: 10px; }
